@@ -16,6 +16,9 @@ public class MainWindowViewModel : INotifyPropertyChanged
     public ReactiveProperty<string> StatusMessage { get; } = new("Ready");
     public ObservableCollection<WindowInfo> Windows { get; } = new();
     public ReactiveCommand RefreshCommand { get; }
+    public ReactiveProperty<WindowInfo?> SelectedWindow { get; } = new();
+    public ObservableCollection<UIElementInfo> Structure { get; } = new();
+    public ReactiveCommand GetStructureCommand { get; }
 
     public MainWindowViewModel(IWindowService windowService)
     {
@@ -23,12 +26,16 @@ public class MainWindowViewModel : INotifyPropertyChanged
 
         RefreshCommand = new ReactiveCommand();
         RefreshCommand.Subscribe(_ => RefreshWindows());
+
+        GetStructureCommand = SelectedWindow.Select(w => w != null).ToReactiveCommand();
+        GetStructureCommand.Subscribe(_ => GetStructure());
     }
 
     private void RefreshWindows()
     {
         StatusMessage.Value = "Refreshing...";
         Windows.Clear();
+        Structure.Clear();
         try
         {
             var windows = _windowService.GetWindows();
@@ -37,6 +44,31 @@ public class MainWindowViewModel : INotifyPropertyChanged
                 Windows.Add(window);
             }
             StatusMessage.Value = $"Found {Windows.Count} windows.";
+        }
+        catch (Exception ex)
+        {
+            StatusMessage.Value = $"Error: {ex.Message}";
+        }
+    }
+
+    private void GetStructure()
+    {
+        if (SelectedWindow.Value == null) return;
+
+        StatusMessage.Value = $"Getting structure for {SelectedWindow.Value.Title}...";
+        Structure.Clear();
+        try
+        {
+            var root = _windowService.GetWindowStructure(SelectedWindow.Value.Handle);
+            if (root != null)
+            {
+                Structure.Add(root);
+                StatusMessage.Value = "Structure retrieved.";
+            }
+            else
+            {
+                StatusMessage.Value = "Failed to retrieve structure.";
+            }
         }
         catch (Exception ex)
         {

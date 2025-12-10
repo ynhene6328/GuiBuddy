@@ -50,4 +50,18 @@ public class AutomationWindowRepository : IWindowRepository
             }
         }
     }
+
+    public UIElementInfo? GetWindowStructure(IntPtr windowHandle)
+    {
+        try
+        {
+            var element = AutomationElement.FromHandle(windowHandle);
+            return _helper.GetElementStructure(element);
+        }
+        catch
+        {
+            return null;
+        }
+    }
 }
+

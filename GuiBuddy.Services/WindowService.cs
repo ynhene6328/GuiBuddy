@@ -20,4 +20,10 @@ public class WindowService : IWindowService
         return _repository.GetAllWindows()
             .Where(w => !string.IsNullOrWhiteSpace(w.Title) && w.Bounds.Width > 0 && w.Bounds.Height > 0);
     }
+
+    public UIElementInfo? GetWindowStructure(IntPtr windowHandle)
+    {
+        return _repository.GetWindowStructure(windowHandle);
+    }
 }
+
