@@ -1,0 +1,14 @@
+<Window x:Class="GuiBuddy.App.Views.OverlayWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="OverlayWindow" 
+        WindowStyle="None" 
+        AllowsTransparency="True" 
+        Background="Transparent"
+        Topmost="True" 
+        ShowInTaskbar="False"
+        WindowState="Maximized">
+    <Grid>
+        <!-- Drawing is handled in OnRender -->
+    </Grid>
+</Window>

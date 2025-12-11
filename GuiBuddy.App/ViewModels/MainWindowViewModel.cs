@@ -11,8 +11,7 @@ public class MainWindowViewModel : INotifyPropertyChanged
 {
     public event PropertyChangedEventHandler? PropertyChanged;
 
-    private readonly IWindowService _windowService;
-    private readonly IUIMapService _uiMapService;
+
 
     public ReactiveProperty<string> StatusMessage { get; } = new("Ready");
     public ObservableCollection<WindowInfo> Windows { get; } = new();
@@ -23,11 +22,19 @@ public class MainWindowViewModel : INotifyPropertyChanged
     public ReactiveProperty<string> UIMapJson { get; } = new("");
     public ReactiveProperty<string> AiMapJson { get; } = new("");
     public ReactiveCommand GenerateMapCommand { get; }
+    public ReactiveCommand ShowOverlayCommand { get; }
+    public ReactiveCommand CloseOverlayCommand { get; }
 
-    public MainWindowViewModel(IWindowService windowService, IUIMapService uiMapService)
+    private readonly IWindowService _windowService;
+    private readonly IUIMapService _uiMapService;
+    private readonly IOverlayService _overlayService;
+    private UIMap? _currentMap;
+
+    public MainWindowViewModel(IWindowService windowService, IUIMapService uiMapService, IOverlayService overlayService)
     {
         _windowService = windowService;
         _uiMapService = uiMapService;
+        _overlayService = overlayService;
 
         RefreshCommand = new ReactiveCommand();
         RefreshCommand.Subscribe(_ => RefreshWindows());
@@ -37,6 +44,12 @@ public class MainWindowViewModel : INotifyPropertyChanged
 
         GenerateMapCommand = SelectedWindow.Select(w => w != null).ToReactiveCommand();
         GenerateMapCommand.Subscribe(_ => GenerateMap());
+
+        ShowOverlayCommand = GenerateMapCommand.Select(_ => true).ToReactiveCommand(); // Simplified check for now, ideally tied to _currentMap availability
+        ShowOverlayCommand.Subscribe(_ => ShowOverlay());
+
+        CloseOverlayCommand = new ReactiveCommand();
+        CloseOverlayCommand.Subscribe(_ => CloseOverlay());
     }
 
     private void RefreshWindows()
@@ -109,6 +122,7 @@ public class MainWindowViewModel : INotifyPropertyChanged
 
                 // Internal Map Serialize
                 UIMapJson.Value = System.Text.Json.JsonSerializer.Serialize(map, options);
+                _currentMap = map;
 
                 // AI Map Conversion
                 if (map.Root != null)
@@ -129,6 +143,7 @@ public class MainWindowViewModel : INotifyPropertyChanged
                 StatusMessage.Value = "Failed to retrieve structure for map generation.";
                 UIMapJson.Value = "Error: Could not retrieve window structure.";
                 AiMapJson.Value = "Error";
+                _currentMap = null;
             }
         }
         catch (Exception ex)
@@ -136,6 +151,22 @@ public class MainWindowViewModel : INotifyPropertyChanged
             StatusMessage.Value = $"Error: {ex.Message}";
             UIMapJson.Value = $"Error: {ex.Message}";
             AiMapJson.Value = $"Error: {ex.Message}";
+            _currentMap = null;
         }
+    }
+
+    private void ShowOverlay()
+    {
+        if (_currentMap?.Root != null)
+        {
+            _overlayService.Show(_currentMap.Root);
+            StatusMessage.Value = "Overlay shown (Press Esc to close is not implemented yet, but Click-through is active)";
+        }
+    }
+
+    private void CloseOverlay()
+    {
+        _overlayService.Hide();
+        StatusMessage.Value = "Overlay closed.";
     }
 }

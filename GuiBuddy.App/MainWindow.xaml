@@ -69,6 +69,8 @@
             <Button Content="Refresh Windows" Command="{Binding RefreshCommand}" Width="120" Height="30"/>
             <Button Content="Get Structure" Command="{Binding GetStructureCommand}" Width="120" Height="30" Margin="10,0,0,0"/>
             <Button Content="Generate UI Map" Command="{Binding GenerateMapCommand}" Width="120" Height="30" Margin="10,0,0,0"/>
+            <Button Content="Show Overlay" Command="{Binding ShowOverlayCommand}" Width="120" Height="30" Margin="10,0,0,0"/>
+            <Button Content="Close Overlay" Command="{Binding CloseOverlayCommand}" Width="120" Height="30" Margin="10,0,0,0"/>
         </StackPanel>
     </Grid>
 </Window>

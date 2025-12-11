@@ -4,6 +4,7 @@ using GuiBuddy.Core.Repositories;
 using GuiBuddy.Core.Services;
 using GuiBuddy.Infrastructure.Repositories;
 using GuiBuddy.Services;
+using GuiBuddy.App.Services;
 using GuiBuddy.App.ViewModels;
 
 namespace GuiBuddy.App;
@@ -34,6 +35,7 @@ public partial class App : Application
         services.AddSingleton<IWindowRepository, AutomationWindowRepository>();
         services.AddSingleton<IWindowService, WindowService>();
         services.AddSingleton<IUIMapService, UIMapService>();
+        services.AddSingleton<IOverlayService, OverlayService>();
 
         // App
         services.AddTransient<MainWindowViewModel>();
