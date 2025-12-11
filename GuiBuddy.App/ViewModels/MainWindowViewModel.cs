@@ -12,6 +12,7 @@ public class MainWindowViewModel : INotifyPropertyChanged
     public event PropertyChangedEventHandler? PropertyChanged;
 
     private readonly IWindowService _windowService;
+    private readonly IUIMapService _uiMapService;
 
     public ReactiveProperty<string> StatusMessage { get; } = new("Ready");
     public ObservableCollection<WindowInfo> Windows { get; } = new();
@@ -19,16 +20,23 @@ public class MainWindowViewModel : INotifyPropertyChanged
     public ReactiveProperty<WindowInfo?> SelectedWindow { get; } = new();
     public ObservableCollection<UIElementInfo> Structure { get; } = new();
     public ReactiveCommand GetStructureCommand { get; }
+    public ReactiveProperty<string> UIMapJson { get; } = new("");
+    public ReactiveProperty<string> AiMapJson { get; } = new("");
+    public ReactiveCommand GenerateMapCommand { get; }
 
-    public MainWindowViewModel(IWindowService windowService)
+    public MainWindowViewModel(IWindowService windowService, IUIMapService uiMapService)
     {
         _windowService = windowService;
+        _uiMapService = uiMapService;
 
         RefreshCommand = new ReactiveCommand();
         RefreshCommand.Subscribe(_ => RefreshWindows());
 
         GetStructureCommand = SelectedWindow.Select(w => w != null).ToReactiveCommand();
         GetStructureCommand.Subscribe(_ => GetStructure());
+
+        GenerateMapCommand = SelectedWindow.Select(w => w != null).ToReactiveCommand();
+        GenerateMapCommand.Subscribe(_ => GenerateMap());
     }
 
     private void RefreshWindows()
@@ -73,6 +81,61 @@ public class MainWindowViewModel : INotifyPropertyChanged
         catch (Exception ex)
         {
             StatusMessage.Value = $"Error: {ex.Message}";
+        }
+    }
+
+    private void GenerateMap()
+    {
+        if (SelectedWindow.Value == null) return;
+
+        StatusMessage.Value = $"Generating UI Map for {SelectedWindow.Value.Title}...";
+        UIMapJson.Value = "Generating...";
+        AiMapJson.Value = "Generating...";
+        try
+        {
+            // まず構造を取得
+            var root = _windowService.GetWindowStructure(SelectedWindow.Value.Handle);
+            if (root != null)
+            {
+                // マップ生成 (Internal Full Map)
+                var map = _uiMapService.GenerateMap(root);
+                
+                var options = new System.Text.Json.JsonSerializerOptions 
+                { 
+                    WriteIndented = true,
+                    Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+                    DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
+                };
+
+                // Internal Map Serialize
+                UIMapJson.Value = System.Text.Json.JsonSerializer.Serialize(map, options);
+
+                // AI Map Conversion
+                if (map.Root != null)
+                {
+                    var aiRoot = _uiMapService.ConvertToAiNode(map.Root);
+                    var aiMap = new { WindowName = map.WindowName, Root = aiRoot };
+                    AiMapJson.Value = System.Text.Json.JsonSerializer.Serialize(aiMap, options);
+                }
+                else
+                {
+                    AiMapJson.Value = "No Root Element";
+                }
+                
+                StatusMessage.Value = "UI Map generated.";
+            }
+            else
+            {
+                StatusMessage.Value = "Failed to retrieve structure for map generation.";
+                UIMapJson.Value = "Error: Could not retrieve window structure.";
+                AiMapJson.Value = "Error";
+            }
+        }
+        catch (Exception ex)
+        {
+            StatusMessage.Value = $"Error: {ex.Message}";
+            UIMapJson.Value = $"Error: {ex.Message}";
+            AiMapJson.Value = $"Error: {ex.Message}";
         }
     }
 }

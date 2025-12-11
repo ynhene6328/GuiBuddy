@@ -33,27 +33,42 @@
 
         <GridSplitter Grid.Row="1" Grid.Column="1" Width="5" HorizontalAlignment="Center"/>
 
-        <TreeView Grid.Row="1" Grid.Column="2" ItemsSource="{Binding Structure}">
-            <TreeView.ItemTemplate>
-                <HierarchicalDataTemplate ItemsSource="{Binding Children}">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="[" Foreground="Blue"/>
-                        <TextBlock Text="{Binding ControlType}" Foreground="Blue"/>
-                        <TextBlock Text="] " Foreground="Blue"/>
-                        <TextBlock Text="{Binding Name}" FontWeight="Bold"/>
-                        <TextBlock Text=" (#" Foreground="Gray"/>
-                        <TextBlock Text="{Binding AutomationId}" Foreground="Gray"/>
-                        <TextBlock Text=")" Foreground="Gray"/>
-                        <TextBlock Text=" "/>
-                        <TextBlock Text="{Binding Bounds}" FontSize="10" VerticalAlignment="Center"/>
-                    </StackPanel>
-                </HierarchicalDataTemplate>
-            </TreeView.ItemTemplate>
-        </TreeView>
+        <TabControl Grid.Row="1" Grid.Column="2">
+            <TabItem Header="Tree Structure">
+                <TreeView ItemsSource="{Binding Structure}">
+                    <TreeView.ItemTemplate>
+                        <HierarchicalDataTemplate ItemsSource="{Binding Children}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="[" Foreground="Blue"/>
+                                <TextBlock Text="{Binding ControlType}" Foreground="Blue"/>
+                                <TextBlock Text="] " Foreground="Blue"/>
+                                <TextBlock Text="{Binding Name}" FontWeight="Bold"/>
+                                <TextBlock Text=" (#" Foreground="Gray"/>
+                                <TextBlock Text="{Binding AutomationId}" Foreground="Gray"/>
+                                <TextBlock Text=")" Foreground="Gray"/>
+                                <TextBlock Text=" "/>
+                                <TextBlock Text="{Binding Bounds}" FontSize="10" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </HierarchicalDataTemplate>
+                    </TreeView.ItemTemplate>
+                </TreeView>
+            </TabItem>
+            <TabItem Header="Internal Map (JSON)">
+                <TextBox Text="{Binding UIMapJson.Value}" IsReadOnly="True" 
+                         VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
+                         FontFamily="Consolas"/>
+            </TabItem>
+            <TabItem Header="AI Map (JSON)">
+                <TextBox Text="{Binding AiMapJson.Value}" IsReadOnly="True" 
+                         VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
+                         FontFamily="Consolas"/>
+            </TabItem>
+        </TabControl>
 
         <StackPanel Grid.Row="2" Grid.ColumnSpan="3" Orientation="Horizontal" Margin="0,10,0,0">
             <Button Content="Refresh Windows" Command="{Binding RefreshCommand}" Width="120" Height="30"/>
             <Button Content="Get Structure" Command="{Binding GetStructureCommand}" Width="120" Height="30" Margin="10,0,0,0"/>
+            <Button Content="Generate UI Map" Command="{Binding GenerateMapCommand}" Width="120" Height="30" Margin="10,0,0,0"/>
         </StackPanel>
     </Grid>
 </Window>

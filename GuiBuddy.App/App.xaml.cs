@@ -33,6 +33,7 @@ public partial class App : Application
         // Core & Infrastructure
         services.AddSingleton<IWindowRepository, AutomationWindowRepository>();
         services.AddSingleton<IWindowService, WindowService>();
+        services.AddSingleton<IUIMapService, UIMapService>();
 
         // App
         services.AddTransient<MainWindowViewModel>();

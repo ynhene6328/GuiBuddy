@@ -28,6 +28,8 @@ public class UIAutomationHelper
         cacheRequest.Add(AutomationElement.NameProperty);
         cacheRequest.Add(AutomationElement.ControlTypeProperty);
         cacheRequest.Add(AutomationElement.AutomationIdProperty);
+        cacheRequest.Add(AutomationElement.HelpTextProperty);
+        cacheRequest.Add(AutomationElement.ClassNameProperty);
         cacheRequest.Add(AutomationElement.BoundingRectangleProperty);
         cacheRequest.TreeScope = TreeScope.Element | TreeScope.Subtree;
 
@@ -56,7 +58,17 @@ public class UIAutomationHelper
         string controlType = "Unknown";
         try
         {
-            controlType = element.Cached.ControlType?.LocalizedControlType ?? "Unknown";
+            // LocalizedControlTypeではなく、ProgrammaticName ("ControlType.Button"など) を使用する
+            // これにより言語に依存せず判定が可能になる
+            var progName = element.Cached.ControlType?.ProgrammaticName;
+            if (!string.IsNullOrEmpty(progName) && progName.StartsWith("ControlType."))
+            {
+                controlType = progName.Substring("ControlType.".Length);
+            }
+            else
+            {
+                controlType = element.Cached.ControlType?.LocalizedControlType ?? "Unknown";
+            }
         }
         catch { }
 
@@ -65,6 +77,8 @@ public class UIAutomationHelper
             Name = element.Cached.Name ?? string.Empty,
             ControlType = controlType,
             AutomationId = element.Cached.AutomationId ?? string.Empty,
+            HelpText = element.Cached.HelpText ?? string.Empty,
+            ClassName = element.Cached.ClassName ?? string.Empty,
             Bounds = element.Cached.BoundingRectangle
         };
 
