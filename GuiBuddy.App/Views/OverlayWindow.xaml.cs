@@ -17,6 +17,8 @@ namespace GuiBuddy.App.Views
         private readonly Brush _hintForegroundBrush;
         private readonly Typeface _typeface;
         private System.Windows.Threading.DispatcherTimer? _inputTimer;
+        private int? _highlightedNodeId;
+        private readonly Pen _highlightPen;
 
         public OverlayWindow()
         {
@@ -25,6 +27,9 @@ namespace GuiBuddy.App.Views
             // Resource initialization for drawing
             _borderPen = new Pen(new SolidColorBrush(Color.FromArgb(128, 0, 120, 215)), 2); // #800078D7
             _borderPen.Freeze();
+            
+            _highlightPen = new Pen(Brushes.Red, 4);
+            _highlightPen.Freeze();
             
             _hintBackgroundBrush = new SolidColorBrush(Color.FromArgb(200, 30, 30, 30)); // Dark semi-transparent
             _hintBackgroundBrush.Freeze();
@@ -37,6 +42,12 @@ namespace GuiBuddy.App.Views
         {
             _rootNode = root;
             InvalidateVisual(); // Request redraw
+        }
+
+        public void HighlightNode(int nodeId)
+        {
+            _highlightedNodeId = nodeId;
+            InvalidateVisual();
         }
 
         protected override void OnSourceInitialized(EventArgs e)
@@ -89,10 +100,14 @@ namespace GuiBuddy.App.Views
             {
                 var rect = new Rect(node.Bounds.X, node.Bounds.Y, node.Bounds.Width, node.Bounds.Height);
                 
-                // Draw rectangle border
-                dc.DrawRectangle(null, _borderPen, rect);
+                // Determine Pen based on ID
+                var pen = (node.Id == _highlightedNodeId) ? _highlightPen : _borderPen;
 
-                // Draw Hint if available
+                // Draw rectangle border
+                dc.DrawRectangle(null, pen, rect);
+
+                // Draw Hint if available (always draw hint, or emphasize it if highlighted?)
+                // For now, standard hint.
                 if (!string.IsNullOrEmpty(node.Hint))
                 {
                     DrawHint(dc, node.Hint, rect);

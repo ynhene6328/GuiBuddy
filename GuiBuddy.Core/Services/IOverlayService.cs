@@ -7,4 +7,5 @@ public interface IOverlayService
     void Show(UiNode root);
     void Hide();
     void Update(UiNode root);
+    void Highlight(int nodeId);
 }

@@ -30,11 +30,14 @@ public class MainWindowViewModel : INotifyPropertyChanged
     private readonly IOverlayService _overlayService;
     private UIMap? _currentMap;
 
-    public MainWindowViewModel(IWindowService windowService, IUIMapService uiMapService, IOverlayService overlayService)
+    public ChatViewModel ChatViewModel { get; }
+
+    public MainWindowViewModel(IWindowService windowService, IUIMapService uiMapService, IOverlayService overlayService, ChatViewModel chatViewModel)
     {
         _windowService = windowService;
         _uiMapService = uiMapService;
         _overlayService = overlayService;
+        ChatViewModel = chatViewModel;
 
         RefreshCommand = new ReactiveCommand();
         RefreshCommand.Subscribe(_ => RefreshWindows());
@@ -123,6 +126,12 @@ public class MainWindowViewModel : INotifyPropertyChanged
                 // Internal Map Serialize
                 UIMapJson.Value = System.Text.Json.JsonSerializer.Serialize(map, options);
                 _currentMap = map;
+
+                // Update Chat Context
+                if (map.Root != null)
+                {
+                    ChatViewModel.CurrentContext = map.Root;
+                }
 
                 // AI Map Conversion
                 if (map.Root != null)

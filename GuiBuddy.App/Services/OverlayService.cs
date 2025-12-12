@@ -33,5 +33,13 @@ namespace GuiBuddy.App.Services
                 _overlayWindow.UpdateData(root);
             }
         }
+
+        public void Highlight(int nodeId)
+        {
+            if (_overlayWindow != null)
+            {
+                _overlayWindow.HighlightNode(nodeId);
+            }
+        }
     }
 }

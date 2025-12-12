@@ -37,6 +37,11 @@ public partial class App : Application
         services.AddSingleton<IUIMapService, UIMapService>();
         services.AddSingleton<IOverlayService, OverlayService>();
 
+        // Chat
+        services.AddSingleton<IAIClient, GuiBuddy.Infrastructure.AI.MockAIClient>();
+        services.AddSingleton<IChatService, ChatService>();
+        services.AddTransient<ChatViewModel>();
+
         // App
         services.AddTransient<MainWindowViewModel>();
         services.AddTransient<MainWindow>();
