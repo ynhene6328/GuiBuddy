@@ -106,7 +106,7 @@ public class ChatViewModel : INotifyPropertyChanged
         }
         catch (Exception ex)
         {
-            Messages.Add(new ChatMessage("System", $"Error loading windows: {ex.Message}"));
+            Messages.Add(new ChatMessage("GuiBuddy-System", $"Error loading windows: {ex.Message}"));
         }
     }
 
@@ -115,7 +115,7 @@ public class ChatViewModel : INotifyPropertyChanged
         if (SelectedTargetWindow.Value != null)
         {
             WindowConfirmed?.Invoke(SelectedTargetWindow.Value);
-            Messages.Add(new ChatMessage("System", $"Target set to: {SelectedTargetWindow.Value.Title}"));
+            Messages.Add(new ChatMessage("GuiBuddy-System", $"対象ウィンドウを設定しました: {SelectedTargetWindow.Value.Title}"));
         }
     }
 
@@ -145,12 +145,12 @@ public class ChatViewModel : INotifyPropertyChanged
             catch (Exception ex)
             {
                 // エラーログは出すが、送信は続行（古いコンテキストかコンテキストなしで）
-                Messages.Add(new ChatMessage("System", $"Warning: Context refresh failed: {ex.Message}"));
+                Messages.Add(new ChatMessage("GuiBuddy-System", $"Warning: Context refresh failed: {ex.Message}"));
             }
         }
 
         string response = await _chatService.SendMessageAsync(userText, CurrentContext);
         
-        Messages.Add(new ChatMessage("GuiBuddy", response));
+        Messages.Add(new ChatMessage("GuiBuddy-AI", response));
     }
 }
