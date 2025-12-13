@@ -25,6 +25,10 @@ public class MainWindowViewModel : INotifyPropertyChanged
     public ReactiveCommand ShowOverlayCommand { get; }
     public ReactiveCommand CloseOverlayCommand { get; }
 
+    // Debug View Toggle
+    public ReactiveProperty<bool> IsDebugVisible { get; } = new(false);
+    public ReactiveCommand ToggleDebugCommand { get; }
+
     private readonly IWindowService _windowService;
     private readonly IUIMapService _uiMapService;
     private readonly IOverlayService _overlayService;
@@ -56,6 +60,9 @@ public class MainWindowViewModel : INotifyPropertyChanged
 
         CloseOverlayCommand = new ReactiveCommand();
         CloseOverlayCommand.Subscribe(_ => CloseOverlay());
+
+        ToggleDebugCommand = new ReactiveCommand();
+        ToggleDebugCommand.Subscribe(_ => IsDebugVisible.Value = !IsDebugVisible.Value);
 
         // ChatViewModelからのウィンドウ確定通知を受け取る
         ChatViewModel.WindowConfirmed += OnChatWindowConfirmed;
