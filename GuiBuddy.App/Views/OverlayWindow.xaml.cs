@@ -140,10 +140,31 @@ namespace GuiBuddy.App.Views
                     pen = _borderPen;
                 }
 
-                if (shouldDraw && pen != null)
+            if (shouldDraw && pen != null)
+            {
+                var rect = new Rect(node.Bounds.X, node.Bounds.Y, node.Bounds.Width, node.Bounds.Height);
+                
+                // 画面外にはみ出さないようにクリッピング
+                var screenRect = new Rect(
+                    SystemParameters.VirtualScreenLeft, 
+                    SystemParameters.VirtualScreenTop, 
+                    SystemParameters.VirtualScreenWidth, 
+                    SystemParameters.VirtualScreenHeight);
+
+                rect.Intersect(screenRect);
+
+                // 交差領域が有効な場合のみ描画
+                if (!rect.IsEmpty && rect.Width > 0 && rect.Height > 0)
                 {
-                    var rect = new Rect(node.Bounds.X, node.Bounds.Y, node.Bounds.Width, node.Bounds.Height);
-                    
+                    // 枠線の太さを考慮して、完全に画面内に収まるようにインセット調整
+                    // DrawRectangleは線の中心を描画するため、端にあると半分切れてしまう
+                    double halfStroke = pen.Thickness / 2;
+
+                    if (rect.Left <= screenRect.Left) rect.X += halfStroke;
+                    if (rect.Top <= screenRect.Top) rect.Y += halfStroke;
+                    if (rect.Right >= screenRect.Right) rect.Width -= halfStroke;
+                    if (rect.Bottom >= screenRect.Bottom) rect.Height -= halfStroke;
+
                     // 矩形枠線を描画
                     dc.DrawRectangle(null, pen, rect);
 
@@ -153,6 +174,7 @@ namespace GuiBuddy.App.Views
                         DrawHint(dc, node.Hint, rect);
                     }
                 }
+            }
             }
 
             // 子要素の描画
