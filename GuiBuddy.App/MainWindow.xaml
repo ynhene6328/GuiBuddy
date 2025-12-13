@@ -12,8 +12,13 @@
     </Window.Resources>
 
     <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>   <!-- Main Content -->
+            <RowDefinition Height="Auto"/> <!-- Settings Button -->
+        </Grid.RowDefinitions>
+
         <!-- Main Content (Debug + Chat) -->
-        <Grid Grid.Row="1">
+        <Grid Grid.Row="0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/> <!-- Debug Panel (Collapsible) -->
                 <ColumnDefinition Width="*"/>    <!-- Chat View -->
@@ -103,6 +108,5 @@
             <!-- Chat View -->
             <views:ChatView Grid.Column="1" DataContext="{Binding ChatViewModel}"/>
         </Grid>
-
     </Grid>
 </Window>

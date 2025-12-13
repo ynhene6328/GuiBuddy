@@ -40,5 +40,17 @@ namespace GuiBuddy.App.Views
                 };
             }
         }
+
+        private void TargetWindow_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            // ComboBox選択時に自動的にウィンドウ確定
+            if (DataContext is ChatViewModel vm && e.AddedItems.Count > 0)
+            {
+                if (vm.ConfirmTargetCommand.CanExecute())
+                {
+                    vm.ConfirmTargetCommand.Execute();
+                }
+            }
+        }
     }
 }

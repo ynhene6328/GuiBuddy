@@ -5,6 +5,18 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="300">
+    <UserControl.Resources>
+        <Style x:Key="IconButtonStyle" TargetType="Button">
+            <Setter Property="FontFamily" Value="Segoe Fluent Icons"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Width" Value="30"/>
+            <Setter Property="Height" Value="30"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        </Style>
+    </UserControl.Resources>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/> <!-- Window Selection Trigger -->
@@ -13,28 +25,34 @@
         </Grid.RowDefinitions>
 
         <!-- Window Selection Area -->
-        <Border Grid.Row="0" Padding="10" Background="#F0F0F0" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1">
-            <StackPanel>
-                <TextBlock Text="Target Window Selection" FontWeight="Bold" Margin="0,0,0,5"/>
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-                    <ComboBox Grid.Column="0" 
-                              ItemsSource="{Binding AvailableWindows}" 
-                              SelectedItem="{Binding SelectedTargetWindow.Value}"
-                              DisplayMemberPath="Title"
-                              Margin="0,0,5,0"
-                              Padding="4"/>
-                    <Button Grid.Column="1" Command="{Binding RefreshWindowsCommand}" Content="🔄" Width="30" Margin="0,0,5,0" ToolTip="Refresh Windows"/>
-                    <Button Grid.Column="2" Command="{Binding OpenSettingsCommand}" Content="⚙" Width="30" Margin="0,0,5,0" ToolTip="設定画面を開く"/>
-                    <Button Grid.Column="3" Command="{Binding ConfirmTargetCommand}" Content="Confirm" Padding="10,0"/>
-                </Grid>
+        <DockPanel>
+            <!-- Settings Button (Bottom Left) -->
+            <StackPanel DockPanel.Dock="Right" Orientation="Vertical">
+                <Button Command="{Binding OpenSettingsCommand}" 
+                        Content="&#xE713;" 
+                        Style="{StaticResource IconButtonStyle}"
+                        ToolTip="API設定"/>
             </StackPanel>
-        </Border>
+            <Border Grid.Row="0" Padding="10" Background="#F0F0F0" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1">
+                <StackPanel>
+                    <TextBlock Text="Target Window Selection" FontWeight="Bold" Margin="0,0,0,5"/>
+                    <DockPanel>
+                        <Button DockPanel.Dock="Left" 
+                                Command="{Binding RefreshWindowsCommand}" 
+                                Content="&#xE72C;" 
+                                Style="{StaticResource IconButtonStyle}"
+                                ToolTip="Refresh Windows"/>
+                        <ComboBox 
+                                ItemsSource="{Binding AvailableWindows}" 
+                                SelectedItem="{Binding SelectedTargetWindow.Value}"
+                                DisplayMemberPath="Title"
+                                Margin="0,0,5,0"
+                                Padding="4"
+                                SelectionChanged="TargetWindow_SelectionChanged"/>
+                    </DockPanel>
+                </StackPanel>
+            </Border>
+        </DockPanel>
 
         <!-- Chat Log -->
         <ListBox x:Name="ChatListBox"
@@ -70,7 +88,13 @@
 
         <!-- Input Area -->
         <DockPanel Grid.Row="2" Margin="5">
-            <Button Content="Send" DockPanel.Dock="Right" Command="{Binding SendCommand}" Width="60" Margin="5,0,0,0"/>
+            <Button Content="&#xE724;" 
+                    DockPanel.Dock="Right" 
+                    Command="{Binding SendCommand}" 
+                    Style="{StaticResource IconButtonStyle}"
+                    Margin="5,0,0,0" 
+                    FontSize="18" 
+                    ToolTip="送信 (Shift+Enter)"/>
             <TextBox Text="{Binding InputText, UpdateSourceTrigger=PropertyChanged}" 
                      Height="60" 
                      AcceptsReturn="True" TextWrapping="Wrap"
