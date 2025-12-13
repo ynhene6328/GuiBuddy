@@ -64,12 +64,12 @@
         </ListBox>
 
         <!-- Input Area -->
-        <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="5">
+        <DockPanel Grid.Row="2" Margin="5">
+            <Button Content="Send" DockPanel.Dock="Right" Command="{Binding SendCommand}" Width="60" Margin="5,0,0,0"/>
             <TextBox Text="{Binding InputText.Value, UpdateSourceTrigger=PropertyChanged}" 
-                     Width="200" Height="60" 
+                     Height="60" 
                      AcceptsReturn="True" TextWrapping="Wrap"
                      VerticalScrollBarVisibility="Auto"/>
-            <Button Content="Send" Command="{Binding SendCommand}" Width="60" Margin="5,0,0,0"/>
-        </StackPanel>
+        </DockPanel>
     </Grid>
 </UserControl>
