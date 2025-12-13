@@ -37,10 +37,13 @@
         </Border>
 
         <!-- Chat Log -->
-        <ListBox ItemsSource="{Binding Messages}" 
+        <ListBox x:Name="ChatListBox"
+                 ItemsSource="{Binding Messages}" 
                  Grid.Row="1" 
                  BorderThickness="0"
-                 ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                 ScrollViewer.CanContentScroll="False"
+                 Loaded="ChatListBox_Loaded">
             <ListBox.ItemTemplate>
                 <DataTemplate>
                     <Border CornerRadius="5" Background="#F0F0F0" Padding="8" Margin="5">
@@ -68,10 +71,11 @@
         <!-- Input Area -->
         <DockPanel Grid.Row="2" Margin="5">
             <Button Content="Send" DockPanel.Dock="Right" Command="{Binding SendCommand}" Width="60" Margin="5,0,0,0"/>
-            <TextBox Text="{Binding InputText.Value, UpdateSourceTrigger=PropertyChanged}" 
+            <TextBox Text="{Binding InputText, UpdateSourceTrigger=PropertyChanged}" 
                      Height="60" 
                      AcceptsReturn="True" TextWrapping="Wrap"
-                     VerticalScrollBarVisibility="Auto"/>
+                     VerticalScrollBarVisibility="Auto"
+                     PreviewKeyDown="InputTextBox_PreviewKeyDown"/>
         </DockPanel>
     </Grid>
 </UserControl>

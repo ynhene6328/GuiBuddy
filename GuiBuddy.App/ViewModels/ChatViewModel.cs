@@ -7,10 +7,17 @@ using GuiBuddy.Core.Services;
 using Reactive.Bindings;
 using Reactive.Bindings.Extensions;
 
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
+
 namespace GuiBuddy.App.ViewModels;
 
-public class ChatViewModel
+public class ChatViewModel : INotifyPropertyChanged
 {
+    public event PropertyChangedEventHandler? PropertyChanged;
+    protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+        => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+
     private readonly IChatService _chatService;
     private readonly IWindowService _windowService;
     private readonly IOverlayService _overlayService;
@@ -22,7 +29,28 @@ public class ChatViewModel
     public ReactiveProperty<WindowInfo?> SelectedTargetWindow { get; } = new();
 
     public ObservableCollection<ChatMessage> Messages { get; } = new();
-    public ReactiveProperty<string> InputText { get; } = new("");
+
+    private string _inputText = "";
+    public string InputText 
+    {
+        get => _inputText;
+        set
+        {
+            if (_inputText != value)
+            {
+                _inputText = value;
+                OnPropertyChanged();
+                // CanExecuteを更新するためにイベントを発行したいが、
+                // ReactiveCommandでObserveしている場合、Propertyの変更通知があればOKか？
+                // ReactivePropertyからReactiveCommandを作る場合と違うので、
+                // ここは手動でCanExecuteChangedを呼ぶか、ReactiveCommandをSubjectから作る等の工夫が必要。
+                // 簡易的にInputTextSubjectを使ってReactiveCommandを生成する。
+                _inputTextSubject.OnNext(value);
+            }
+        }
+    }
+    private readonly System.Reactive.Subjects.Subject<string> _inputTextSubject = new();
+
     public ReactiveCommand SendCommand { get; }
     public ReactiveCommand RefreshWindowsCommand { get; }
     public ReactiveCommand ConfirmTargetCommand { get; }
@@ -45,7 +73,7 @@ public class ChatViewModel
             .Where(w => w != null)
             .Subscribe(w => _overlayService.HighlightWindow(w!));
 
-        SendCommand = InputText
+        SendCommand = _inputTextSubject
             .Select(x => !string.IsNullOrWhiteSpace(x))
             .ToReactiveCommand();
         SendCommand.Subscribe(async _ => await SendMessage());
@@ -63,6 +91,9 @@ public class ChatViewModel
 
         // Initial Load
         LoadWindows();
+        
+        // Initial Subject Value
+        _inputTextSubject.OnNext("");
     }
 
     private void LoadWindows()
@@ -93,10 +124,10 @@ public class ChatViewModel
 
     private async Task SendMessage()
     {
-        if (string.IsNullOrWhiteSpace(InputText.Value)) return;
+        if (string.IsNullOrWhiteSpace(InputText)) return;
 
-        string userText = InputText.Value;
-        InputText.Value = ""; // Clear input
+        string userText = InputText;
+        InputText = ""; // Clear input, this updates the view but usually safe for cursor if done after send
 
         Messages.Add(new ChatMessage("User", userText));
 

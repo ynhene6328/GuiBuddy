@@ -1,4 +1,6 @@
+using System.Collections.Specialized;
 using System.Windows.Controls;
+using System.Windows.Input;
 using GuiBuddy.App.ViewModels;
 
 namespace GuiBuddy.App.Views
@@ -8,6 +10,35 @@ namespace GuiBuddy.App.Views
         public ChatView()
         {
             InitializeComponent();
+        }
+
+        private void InputTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter && Keyboard.Modifiers == ModifierKeys.Shift)
+            {
+                if (DataContext is ChatViewModel vm)
+                {
+                    if (vm.SendCommand.CanExecute())
+                    {
+                        vm.SendCommand.Execute();
+                        e.Handled = true; // Prevent newline
+                    }
+                }
+            }
+        }
+
+        private void ChatListBox_Loaded(object sender, System.Windows.RoutedEventArgs e)
+        {
+            if (ChatListBox.ItemsSource is INotifyCollectionChanged collection)
+            {
+                collection.CollectionChanged += (s, args) =>
+                {
+                    if (ChatListBox.Items.Count > 0)
+                    {
+                        ChatListBox.ScrollIntoView(ChatListBox.Items[ChatListBox.Items.Count - 1]);
+                    }
+                };
+            }
         }
     }
 }
