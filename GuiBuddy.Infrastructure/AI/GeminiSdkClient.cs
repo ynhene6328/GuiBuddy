@@ -127,7 +127,7 @@ public class GeminiSdkClient : IAIClient
         }
 
         // Optional: Remove tags from display text
-        // aiResponse.ResponseText = Regex.Replace(rawText, @"\[HIGHLIGHT:\d+\]", "").Trim();
+        aiResponse.ResponseText = Regex.Replace(rawText, @"\[HIGHLIGHT:\s*\d+\]", "", RegexOptions.IgnoreCase).Trim();
 
         return aiResponse;
     }
