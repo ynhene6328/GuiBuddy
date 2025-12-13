@@ -32,15 +32,17 @@ public class MainWindowViewModel : INotifyPropertyChanged
     private readonly IWindowService _windowService;
     private readonly IUIMapService _uiMapService;
     private readonly IOverlayService _overlayService;
+    private readonly ISettingsService _settingsService;
     private UIMap? _currentMap;
 
     public ChatViewModel ChatViewModel { get; }
 
-    public MainWindowViewModel(IWindowService windowService, IUIMapService uiMapService, IOverlayService overlayService, ChatViewModel chatViewModel)
+    public MainWindowViewModel(IWindowService windowService, IUIMapService uiMapService, IOverlayService overlayService, ISettingsService settingsService, ChatViewModel chatViewModel)
     {
         _windowService = windowService;
         _uiMapService = uiMapService;
         _overlayService = overlayService;
+        _settingsService = settingsService;
         ChatViewModel = chatViewModel;
 
         RefreshCommand = new ReactiveCommand();
@@ -66,6 +68,7 @@ public class MainWindowViewModel : INotifyPropertyChanged
 
         // ChatViewModelからのウィンドウ確定通知を受け取る
         ChatViewModel.WindowConfirmed += OnChatWindowConfirmed;
+        ChatViewModel.OpenSettingsRequested += ShowSettings;
     }
 
     private void OnChatWindowConfirmed(WindowInfo window)
@@ -196,5 +199,18 @@ public class MainWindowViewModel : INotifyPropertyChanged
     {
         _overlayService.Hide();
         StatusMessage.Value = "Overlay closed.";
+    }
+
+    private void ShowSettings()
+    {
+        // 設定画面を開く
+        // ViewModelはMainWindowと同じUIスレッドで作成される想定
+        var settingsVm = new SettingsViewModel(_settingsService);
+        var settingsWin = new Views.SettingsWindow(settingsVm);
+        settingsWin.Owner = System.Windows.Application.Current.MainWindow; // モーダル親設定
+        settingsWin.ShowDialog();
+        
+        // Windowが閉じられたらDispose
+        settingsVm.Dispose();
     }
 }

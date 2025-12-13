@@ -37,9 +37,10 @@ public partial class App : Application
         services.AddSingleton<IWindowService, WindowService>();
         services.AddSingleton<IUIMapService, UIMapService>();
         services.AddSingleton<IOverlayService, OverlayService>();
+        services.AddSingleton<ISettingsService, GuiBuddy.Infrastructure.Services.SettingsService>();
 
         // Chat
-        services.AddSingleton<IAIClient, GuiBuddy.Infrastructure.AI.MockAIClient>();
+        services.AddSingleton<IAIClient, GuiBuddy.Infrastructure.AI.GeminiSdkClient>();
         services.AddSingleton<IChatService, ChatService>();
 
         // App

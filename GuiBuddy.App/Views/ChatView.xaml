@@ -21,6 +21,7 @@
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <ComboBox Grid.Column="0" 
                               ItemsSource="{Binding AvailableWindows}" 
@@ -29,7 +30,8 @@
                               Margin="0,0,5,0"
                               Padding="4"/>
                     <Button Grid.Column="1" Command="{Binding RefreshWindowsCommand}" Content="🔄" Width="30" Margin="0,0,5,0" ToolTip="Refresh Windows"/>
-                    <Button Grid.Column="2" Command="{Binding ConfirmTargetCommand}" Content="Confirm" Padding="10,0"/>
+                    <Button Grid.Column="2" Command="{Binding OpenSettingsCommand}" Content="⚙" Width="30" Margin="0,0,5,0" ToolTip="設定画面を開く"/>
+                    <Button Grid.Column="3" Command="{Binding ConfirmTargetCommand}" Content="Confirm" Padding="10,0"/>
                 </Grid>
             </StackPanel>
         </Border>

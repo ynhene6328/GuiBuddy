@@ -19,36 +19,30 @@ public class ChatService : IChatService
 
     public async Task<string> SendMessageAsync(string userMessage, UiNode? appContext)
     {
-        // 実際のシナリオでは、appContextをシリアライズしてプロンプトに含めます。
-        // Step 5 (Mock) では、ユーザーメッセージをそのまま渡します。
+        // AIRequestの作成
+        var request = new AIRequest(userMessage, appContext);
         
-        string response = await _aiClient.SendAsync(userMessage);
+        // AIクライアントへの送信
+        AIResponse response = await _aiClient.SendAsync(request);
 
-        // ハイライトコマンドを解析: [HIGHLIGHT:123]
-        var match = Regex.Match(response, @"\[HIGHLIGHT:(\d+)\]");
-        string displayResponse = response;
-
-        if (match.Success)
+        // ハイライトIDの処理
+        if (response.TargetElementIds != null && response.TargetElementIds.Count > 0)
         {
-            if (int.TryParse(match.Groups[1].Value, out int nodeId))
+            // ハイライト目的なので、全要素表示(showAll)はfalseにする
+            // オーバーレイが表示されていない場合に備えて、Showを呼び出す(rootが必要だが、appContextがrootとは限らない)
+            // ここではappContextが表示対象のルートであると仮定するか、別途ルート取得手段が必要
+            // いったんappContextがあればそれを表示する
+            if (appContext != null)
             {
-                // ユーザーの指摘対応: オーバーレイが表示されていない場合に備えて、Showを呼び出す
-                if (appContext != null)
-                {
-                    // ハイライト目的なので、全要素表示(showAll)はfalseにする
-                    _overlayService.Show(appContext, showAll: false);
-                }
-                _overlayService.Highlight(nodeId);
+                _overlayService.Show(appContext, showAll: false);
             }
 
-            // 表示用にレスポンスからコマンドを除去（オプションですが、コマンドを隠したほうがUXが良いです）
-            // match.Value が空文字でないことは match.Success で保証されていますが、念のため空チェックも可能です
-            if (!string.IsNullOrEmpty(match.Value))
+            foreach (var id in response.TargetElementIds)
             {
-                displayResponse = response.Replace(match.Value, "").Trim();
+                _overlayService.Highlight(id);
             }
         }
 
-        return displayResponse;
+        return response.ResponseText;
     }
 }

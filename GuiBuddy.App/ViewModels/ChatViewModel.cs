@@ -26,9 +26,11 @@ public class ChatViewModel
     public ReactiveCommand SendCommand { get; }
     public ReactiveCommand RefreshWindowsCommand { get; }
     public ReactiveCommand ConfirmTargetCommand { get; }
+    public ReactiveCommand OpenSettingsCommand { get; }
 
     // Event to notify parent view model
     public event Action<WindowInfo>? WindowConfirmed;
+    public event Action? OpenSettingsRequested;
 
     public UiNode? CurrentContext { get; set; } // Set by parent ViewModel
 
@@ -55,6 +57,9 @@ public class ChatViewModel
             .Select(w => w != null)
             .ToReactiveCommand();
         ConfirmTargetCommand.Subscribe(_ => ConfirmWindow());
+
+        OpenSettingsCommand = new ReactiveCommand();
+        OpenSettingsCommand.Subscribe(_ => OpenSettingsRequested?.Invoke());
 
         // Initial Load
         LoadWindows();
