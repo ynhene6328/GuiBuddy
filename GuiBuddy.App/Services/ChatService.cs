@@ -21,6 +21,11 @@ public class ChatService : IChatService
     {
         // AIRequestの作成
         var request = new AIRequest(userMessage, appContext);
+        request.SystemInstruction = 
+            "あなたはGUI操作アシスタントです。提供された[Current UI Context]を分析し、ユーザーの要望に最も合致するUI要素を特定してください。\n" +
+            "回答の最後には必ず、特定した要素のIDを `[HIGHLIGHT:数値]` の形式で付記してください。\n" +
+            "例: 「保存ボタンはこちらです。[HIGHLIGHT:123]」\n" +
+            "該当する要素がない場合は、その理由を説明してください。";
         
         // AIクライアントへの送信
         AIResponse response = await _aiClient.SendAsync(request);

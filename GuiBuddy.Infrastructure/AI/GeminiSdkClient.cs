@@ -117,7 +117,7 @@ public class GeminiSdkClient : IAIClient
 
         // Extract [HIGHLIGHT:123] pattern
         // Regex to find multiple highlights if present
-        var matches = Regex.Matches(rawText, @"\[HIGHLIGHT:(\d+)\]");
+        var matches = Regex.Matches(rawText, @"\[HIGHLIGHT:\s*(\d+)\]", RegexOptions.IgnoreCase);
         foreach (Match match in matches)
         {
             if (int.TryParse(match.Groups[1].Value, out int id))
