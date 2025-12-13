@@ -38,15 +38,21 @@ namespace GuiBuddy.App.Views
             _typeface = new Typeface("Segoe UI");
         }
 
-        public void UpdateData(UiNode root)
+        private bool _showAllNodes = true;
+
+
+
+        public void UpdateData(UiNode root, bool showAll)
         {
             _rootNode = root;
-            InvalidateVisual(); // Request redraw
+            _showAllNodes = showAll; // 全表示フラグを更新
+            InvalidateVisual(); // 再描画をリクエスト
         }
 
         public void HighlightNode(int nodeId)
         {
             _highlightedNodeId = nodeId;
+            _showAllNodes = false; // ハイライト時は全表示をオフにする（混在させたい場合はロジック調整）
             InvalidateVisual();
         }
 
@@ -90,31 +96,53 @@ namespace GuiBuddy.App.Views
 
             if (_rootNode == null) return;
 
+            // ハイライトIDがなく、かつ全表示モードでもない場合は描画しない
+            if (!_highlightedNodeId.HasValue && !_showAllNodes)
+            {
+                return;
+            }
+
             DrawNodeRecursive(dc, _rootNode);
         }
 
         private void DrawNodeRecursive(DrawingContext dc, UiNode node)
         {
-            // Draw Bounds
+            // 境界ボックスの描画
             if (node.Bounds != null)
             {
-                var rect = new Rect(node.Bounds.X, node.Bounds.Y, node.Bounds.Width, node.Bounds.Height);
-                
-                // Determine Pen based on ID
-                var pen = (node.Id == _highlightedNodeId) ? _highlightPen : _borderPen;
+                bool isHighlightTarget = _highlightedNodeId.HasValue && node.Id == _highlightedNodeId.Value;
+                bool shouldDraw = false;
+                Pen? pen = null;
 
-                // Draw rectangle border
-                dc.DrawRectangle(null, pen, rect);
-
-                // Draw Hint if available (always draw hint, or emphasize it if highlighted?)
-                // For now, standard hint.
-                if (!string.IsNullOrEmpty(node.Hint))
+                if (isHighlightTarget)
                 {
-                    DrawHint(dc, node.Hint, rect);
+                    // ハイライト対象の場合
+                    shouldDraw = true;
+                    pen = _highlightPen;
+                }
+                else if (_showAllNodes && !_highlightedNodeId.HasValue)
+                {
+                    // 全表示モードかつハイライト指定がない場合
+                    shouldDraw = true;
+                    pen = _borderPen;
+                }
+
+                if (shouldDraw && pen != null)
+                {
+                    var rect = new Rect(node.Bounds.X, node.Bounds.Y, node.Bounds.Width, node.Bounds.Height);
+                    
+                    // 矩形枠線を描画
+                    dc.DrawRectangle(null, pen, rect);
+
+                    // ヒントを描画（全表示モードまたはハイライト対象のみ）
+                    if (!string.IsNullOrEmpty(node.Hint))
+                    {
+                        DrawHint(dc, node.Hint, rect);
+                    }
                 }
             }
 
-            // Draw Children
+            // 子要素の描画
             foreach (var child in node.Children)
             {
                 DrawNodeRecursive(dc, child);

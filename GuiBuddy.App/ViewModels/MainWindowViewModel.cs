@@ -48,11 +48,23 @@ public class MainWindowViewModel : INotifyPropertyChanged
         GenerateMapCommand = SelectedWindow.Select(w => w != null).ToReactiveCommand();
         GenerateMapCommand.Subscribe(_ => GenerateMap());
 
+        // ユーザーの要望: ウィンドウ選択時に自動的にマップ生成を行う
+        SelectedWindow.Where(w => w != null).Subscribe(_ => GenerateMap());
+
         ShowOverlayCommand = GenerateMapCommand.Select(_ => true).ToReactiveCommand(); // Simplified check for now, ideally tied to _currentMap availability
         ShowOverlayCommand.Subscribe(_ => ShowOverlay());
 
         CloseOverlayCommand = new ReactiveCommand();
         CloseOverlayCommand.Subscribe(_ => CloseOverlay());
+
+        // ChatViewModelからのウィンドウ確定通知を受け取る
+        ChatViewModel.WindowConfirmed += OnChatWindowConfirmed;
+    }
+
+    private void OnChatWindowConfirmed(WindowInfo window)
+    {
+        // 既存のSelectedWindowを更新 -> Subscribe済みのGenerateMapが自動的に走る
+        SelectedWindow.Value = window;
     }
 
     private void RefreshWindows()

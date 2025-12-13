@@ -40,11 +40,10 @@ public partial class App : Application
         // Chat
         services.AddSingleton<IAIClient, GuiBuddy.Infrastructure.AI.MockAIClient>();
         services.AddSingleton<IChatService, ChatService>();
-        services.AddTransient<ChatViewModel>();
 
         // App
-        services.AddTransient<MainWindowViewModel>();
+        services.AddSingleton<MainWindowViewModel>();
+        services.AddSingleton<ChatViewModel>(); // Dependencies (IChatService, IWindowService, IOverlayService) will be resolved auto-magically by container
         services.AddTransient<MainWindow>();
     }
 }
-

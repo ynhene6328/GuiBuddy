@@ -7,12 +7,36 @@
              d:DesignHeight="450" d:DesignWidth="300">
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/> <!-- Window Selection Trigger -->
+            <RowDefinition Height="*"/>    <!-- Chat Log -->
+            <RowDefinition Height="Auto"/> <!-- Input Area -->
         </Grid.RowDefinitions>
 
+        <!-- Window Selection Area -->
+        <Border Grid.Row="0" Padding="10" Background="#F0F0F0" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1">
+            <StackPanel>
+                <TextBlock Text="Target Window Selection" FontWeight="Bold" Margin="0,0,0,5"/>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <ComboBox Grid.Column="0" 
+                              ItemsSource="{Binding AvailableWindows}" 
+                              SelectedItem="{Binding SelectedTargetWindow.Value}"
+                              DisplayMemberPath="Title"
+                              Margin="0,0,5,0"
+                              Padding="4"/>
+                    <Button Grid.Column="1" Command="{Binding RefreshWindowsCommand}" Content="🔄" Width="30" Margin="0,0,5,0" ToolTip="Refresh Windows"/>
+                    <Button Grid.Column="2" Command="{Binding ConfirmTargetCommand}" Content="Confirm" Padding="10,0"/>
+                </Grid>
+            </StackPanel>
+        </Border>
+
+        <!-- Chat Log -->
         <ListBox ItemsSource="{Binding Messages}" 
-                 Grid.Row="0" 
+                 Grid.Row="1" 
                  BorderThickness="0"
                  ScrollViewer.HorizontalScrollBarVisibility="Disabled">
             <ListBox.ItemTemplate>
@@ -39,7 +63,8 @@
             </ListBox.ItemContainerStyle>
         </ListBox>
 
-        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="5">
+        <!-- Input Area -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="5">
             <TextBox Text="{Binding InputText.Value, UpdateSourceTrigger=PropertyChanged}" 
                      Width="200" Height="60" 
                      AcceptsReturn="True" TextWrapping="Wrap"

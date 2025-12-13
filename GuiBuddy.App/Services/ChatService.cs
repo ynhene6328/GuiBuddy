@@ -35,7 +35,8 @@ public class ChatService : IChatService
                 // ユーザーの指摘対応: オーバーレイが表示されていない場合に備えて、Showを呼び出す
                 if (appContext != null)
                 {
-                    _overlayService.Show(appContext);
+                    // ハイライト目的なので、全要素表示(showAll)はfalseにする
+                    _overlayService.Show(appContext, showAll: false);
                 }
                 _overlayService.Highlight(nodeId);
             }
