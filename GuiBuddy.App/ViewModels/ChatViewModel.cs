@@ -21,6 +21,7 @@ public class ChatViewModel : INotifyPropertyChanged
     private readonly IChatService _chatService;
     private readonly IWindowService _windowService;
     private readonly IOverlayService _overlayService;
+    private readonly IUIMapService _uiMapService;
 
     // Window Selection
     public ObservableCollection<WindowInfo> AvailableWindows { get; } = new();
@@ -40,11 +41,6 @@ public class ChatViewModel : INotifyPropertyChanged
             {
                 _inputText = value;
                 OnPropertyChanged();
-                // CanExecuteを更新するためにイベントを発行したいが、
-                // ReactiveCommandでObserveしている場合、Propertyの変更通知があればOKか？
-                // ReactivePropertyからReactiveCommandを作る場合と違うので、
-                // ここは手動でCanExecuteChangedを呼ぶか、ReactiveCommandをSubjectから作る等の工夫が必要。
-                // 簡易的にInputTextSubjectを使ってReactiveCommandを生成する。
                 _inputTextSubject.OnNext(value);
             }
         }
@@ -62,11 +58,12 @@ public class ChatViewModel : INotifyPropertyChanged
 
     public UiNode? CurrentContext { get; set; } // Set by parent ViewModel
 
-    public ChatViewModel(IChatService chatService, IWindowService windowService, IOverlayService overlayService)
+    public ChatViewModel(IChatService chatService, IWindowService windowService, IOverlayService overlayService, IUIMapService uiMapService)
     {
         _chatService = chatService;
         _windowService = windowService;
         _overlayService = overlayService;
+        _uiMapService = uiMapService;
 
         // Window Highlight Logic
         SelectedTargetWindow
@@ -131,8 +128,27 @@ public class ChatViewModel : INotifyPropertyChanged
 
         Messages.Add(new ChatMessage("User", userText));
 
-        // Add a temporary "Typing..." or similar if desired, but for Mock is fast.
-        
+        // 送信前に現在のターゲットウィンドウの情報を再取得してコンテキストを更新
+        if (SelectedTargetWindow.Value != null)
+        {
+            try
+            {
+                // UI構造の再取得
+                var root = _windowService.GetWindowStructure(SelectedTargetWindow.Value.Handle);
+                if (root != null)
+                {
+                    // ID付与ロジックはGenerateMapで走るため、Map生成を通してからContextに設定
+                    var map = _uiMapService.GenerateMap(root);
+                    CurrentContext = map.Root;
+                }
+            }
+            catch (Exception ex)
+            {
+                // エラーログは出すが、送信は続行（古いコンテキストかコンテキストなしで）
+                Messages.Add(new ChatMessage("System", $"Warning: Context refresh failed: {ex.Message}"));
+            }
+        }
+
         string response = await _chatService.SendMessageAsync(userText, CurrentContext);
         
         Messages.Add(new ChatMessage("GuiBuddy", response));
