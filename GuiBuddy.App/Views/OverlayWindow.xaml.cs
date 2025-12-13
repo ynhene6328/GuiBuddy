@@ -36,6 +36,12 @@ namespace GuiBuddy.App.Views
             
             _hintForegroundBrush = Brushes.White;
             _typeface = new Typeface("Segoe UI");
+
+            // マルチディスプレイ対応: 仮想スクリーン全体をカバーするように設定
+            this.Left = SystemParameters.VirtualScreenLeft;
+            this.Top = SystemParameters.VirtualScreenTop;
+            this.Width = SystemParameters.VirtualScreenWidth;
+            this.Height = SystemParameters.VirtualScreenHeight;
         }
 
         private bool _showAllNodes = true;
@@ -102,7 +108,14 @@ namespace GuiBuddy.App.Views
                 return;
             }
 
+            // マルチディスプレイ対応: 座標変換
+            // ウィンドウの左上が (VirtualScreenLeft, VirtualScreenTop) なので、
+            // スクリーン絶対座標 (0,0) を描画するには、(-Left, -Top) だけずらす必要がある
+            dc.PushTransform(new TranslateTransform(-this.Left, -this.Top));
+
             DrawNodeRecursive(dc, _rootNode);
+
+            dc.Pop(); // Transform解除
         }
 
         private void DrawNodeRecursive(DrawingContext dc, UiNode node)

@@ -6,8 +6,8 @@
         AllowsTransparency="True" 
         Background="Transparent"
         Topmost="True" 
-        ShowInTaskbar="False"
-        WindowState="Maximized">
+        ShowInTaskbar="False">
+
     <Grid>
         <!-- Drawing is handled in OnRender -->
     </Grid>
