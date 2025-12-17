@@ -31,6 +31,7 @@ public class UIAutomationHelper
         cacheRequest.Add(AutomationElement.HelpTextProperty);
         cacheRequest.Add(AutomationElement.ClassNameProperty);
         cacheRequest.Add(AutomationElement.BoundingRectangleProperty);
+        cacheRequest.Add(AutomationElement.IsOffscreenProperty);
         cacheRequest.TreeScope = TreeScope.Element | TreeScope.Subtree;
 
         // キャッシュを有効にして要素を取得
@@ -79,7 +80,8 @@ public class UIAutomationHelper
             AutomationId = element.Cached.AutomationId ?? string.Empty,
             HelpText = element.Cached.HelpText ?? string.Empty,
             ClassName = element.Cached.ClassName ?? string.Empty,
-            Bounds = element.Cached.BoundingRectangle
+            Bounds = element.Cached.BoundingRectangle,
+            IsOffscreen = element.Cached.IsOffscreen
         };
 
         // ControlViewWalkerを使用して子要素を走査
@@ -96,5 +98,70 @@ public class UIAutomationHelper
         }
 
         return info;
+    }
+
+    public bool ScrollToElement(AutomationElement root, string targetAutomationId)
+    {
+        if (root == null) return false;
+
+        // ターゲット要素を名前やIDで検索
+        // ここではAutomationIdを主キーとするが、必要に応じて他の条件も追加可能
+        // 注: TreeScope.Descendantsは重いため、本来は必要な階層まで絞るか、IDが一意であることを前提とする
+        var condition = new PropertyCondition(AutomationElement.AutomationIdProperty, targetAutomationId);
+        var targetElement = root.FindFirst(TreeScope.Descendants, condition);
+
+        if (targetElement == null) return false;
+
+        return EnsureElementVisible(targetElement);
+    }
+
+    private bool EnsureElementVisible(AutomationElement element)
+    {
+        if (element == null) return false;
+
+        try
+        {
+            // 1. ScrollItemPattern (リスト項目など自体がスクロール機能を持つ親に属する場合)
+            object patternObj;
+            if (element.TryGetCurrentPattern(ScrollItemPattern.Pattern, out patternObj))
+            {
+                var scrollItemPattern = (ScrollItemPattern)patternObj;
+                scrollItemPattern.ScrollIntoView();
+                return true;
+            }
+
+            // 2. 親を遡って ScrollPattern を持つコンテナを探す
+            var current = element;
+            var walker = TreeWalker.ControlViewWalker;
+            
+            while (current != null && current != AutomationElement.RootElement)
+            {
+                if (current.TryGetCurrentPattern(ScrollPattern.Pattern, out patternObj))
+                {
+                    var scrollPattern = (ScrollPattern)patternObj;
+                    
+                    // 単純にScrollIntoView相当がないため、位置計算が必要だが、
+                    // ScrollPatternしかない場合は「スクロール可能」とみなして
+                    // VerticalScrollPercentなどを調整する...というのは難易度が高い。
+                    // 多くの場合は ScrollItemPattern でカバーできるはず。
+                    
+                    // 簡易的な対応として、要素が可視になるまで少しずつスクロールする、などのロジックが考えられるが
+                    // ここでは一旦 ScrollItemPattern メインとする。
+                    // 親がScrollPatternを持っていても、どの子を表示したいかがわからないと制御できない。
+                    
+                    // ただし、もしターゲット要素自体が ScrollPattern を持っている（例: テキストボックス自身）場合は
+                    // コンテンツ自体のスクロールなので、要素自体の可視化には寄与しないことが多い。
+                    
+                    break; 
+                }
+                current = walker.GetParent(current);
+            }
+            
+            return false;
+        }
+        catch
+        {
+            return false;
+        }
     }
 }

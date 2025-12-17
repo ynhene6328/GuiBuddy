@@ -186,8 +186,85 @@ public class ChatViewModel : INotifyPropertyChanged
             }
         }
 
-        string response = await _chatService.SendMessageAsync(userText, CurrentContext);
+        AIResponse response = await _chatService.SendMessageAsync(userText, CurrentContext);
         
-        Messages.Add(new ChatMessage("GuiBuddy-AI", response));
+        Messages.Add(new ChatMessage("GuiBuddy-AI", response.ResponseText));
+
+        // ハイライトとスクロール処理
+        if (response.TargetElementIds != null && response.TargetElementIds.Count > 0 && CurrentContext != null)
+        {
+            var targetIds = response.TargetElementIds;
+            bool needRefresh = false;
+
+            // 画面外要素のチェックとスクロール
+            foreach (var id in targetIds)
+            {
+                var node = FindNodeById(CurrentContext, id);
+                if (node != null && node.IsOffscreen && !string.IsNullOrEmpty(node.AutomationId))
+                {
+                    // スクロール試行
+                    bool scrollSuccess = _windowService.ScrollToElement(SelectedTargetWindow.Value!.Handle, node.AutomationId);
+                    if (scrollSuccess)
+                    {
+                        needRefresh = true;
+                    }
+                    else
+                    {
+                        Messages.Add(new ChatMessage("GuiBuddy-System", $"注意: 対象要素の一つが画面外ですが、スクロールできませんでした。(ID: {id})"));
+                    }
+                }
+            }
+
+            if (needRefresh)
+            {
+                // スクロールにより座標が変わった可能性があるため再取得
+                try
+                {
+                    var root = _windowService.GetWindowStructure(SelectedTargetWindow.Value!.Handle);
+                    if (root != null)
+                    {
+                        var map = _uiMapService.GenerateMap(root);
+                        CurrentContext = map.Root;
+                        // マップ更新時はオーバーレイも更新
+                        _overlayService.Update(CurrentContext);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Messages.Add(new ChatMessage("GuiBuddy-System", $"Warning: Post-scroll refresh failed: {ex.Message}"));
+                }
+            }
+
+            // オーバーレイ表示とハイライト
+            // CurrentContextが最新（または元のまま）
+             if (CurrentContext != null)
+            {
+                _overlayService.Show(CurrentContext, showAll: false);
+                foreach (var id in targetIds)
+                {
+                    // 再取得した場合、IDが変わっている可能性がある
+                    // UIMapServiceの実装上、IDは生成順なので構造が同じなら同じになる可能性が高いが
+                    // 厳密にはAutomationId等で再検索してIDを特定しなおすべき。
+                    // しかし複雑になるため、今回は「座標更新後も構成が変わらなければIDズレは許容範囲」とするか、
+                    // あるいは「スクロール後はIDが変わる」ことを前提に再検索するロジックを入れるか。
+                    // UIMapService._nodeIdCounter = 1 でリセットされるため、構造が変わらなければIDは同じになるはず。
+                    
+                    // ただし動的なリスト読み込み等で構造が変わる場合はIDがずれる。
+                    // ここでは簡易的に、元のIDでハイライトを試みる。
+                    _overlayService.Highlight(id);
+                }
+            }
+        }
+    }
+
+    private UiNode? FindNodeById(UiNode root, int id)
+    {
+        if (root.Id == id) return root;
+        foreach (var child in root.Children)
+        {
+            var found = FindNodeById(child, id);
+            if (found != null) return found;
+        }
+        return null;
     }
 }

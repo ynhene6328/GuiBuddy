@@ -17,7 +17,7 @@ public class ChatService : IChatService
         _overlayService = overlayService;
     }
 
-    public async Task<string> SendMessageAsync(string userMessage, UiNode? appContext)
+    public async Task<AIResponse> SendMessageAsync(string userMessage, UiNode? appContext)
     {
         // AIRequestの作成
         var request = new AIRequest(userMessage, appContext);
@@ -30,24 +30,9 @@ public class ChatService : IChatService
         // AIクライアントへの送信
         AIResponse response = await _aiClient.SendAsync(request);
 
-        // ハイライトIDの処理
-        if (response.TargetElementIds != null && response.TargetElementIds.Count > 0)
-        {
-            // ハイライト目的なので、全要素表示(showAll)はfalseにする
-            // オーバーレイが表示されていない場合に備えて、Showを呼び出す(rootが必要だが、appContextがrootとは限らない)
-            // ここではappContextが表示対象のルートであると仮定するか、別途ルート取得手段が必要
-            // いったんappContextがあればそれを表示する
-            if (appContext != null)
-            {
-                _overlayService.Show(appContext, showAll: false);
-            }
+        // ChatServiceでのハイライト処理は削除し、ViewModelに任せる
+        // これによりViewModel側でスクロール等の制御が可能になる
 
-            foreach (var id in response.TargetElementIds)
-            {
-                _overlayService.Highlight(id);
-            }
-        }
-
-        return response.ResponseText;
+        return response;
     }
 }

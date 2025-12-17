@@ -19,6 +19,9 @@ public class UiNode
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? Hint { get; set; }
 
+    [JsonIgnore]
+    public bool IsOffscreen { get; set; }
+
     public List<UiNode> Children { get; set; } = new();
 
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
