@@ -6,4 +6,5 @@ public interface IWindowService
 {
     IEnumerable<WindowInfo> GetWindows();
     UIElementInfo? GetWindowStructure(IntPtr windowHandle);
+    WindowInfo? GetForegroundWindow();
 }

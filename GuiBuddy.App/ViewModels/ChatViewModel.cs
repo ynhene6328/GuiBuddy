@@ -123,8 +123,45 @@ public class ChatViewModel : INotifyPropertyChanged
     {
         if (string.IsNullOrWhiteSpace(InputText)) return;
 
+        // 1. ウィンドウ追従機能 (Window Tracking)
+        // ユーザーが現在操作しているフォアグラウンドウィンドウを確認
+        var foregroundWindow = _windowService.GetForegroundWindow();
+        if (foregroundWindow != null && SelectedTargetWindow.Value != null)
+        {
+            // 現在の対象ウィンドウと異なるプロセスIDだが、同一プロセス内の別ウィンドウの場合
+            // または、プロセスIDが一致するがハンドルが異なる場合（こちらのほうが確実）
+            bool isSameProcess = foregroundWindow.ProcessId == SelectedTargetWindow.Value.ProcessId;
+            bool isDifferentHandle = foregroundWindow.Handle != SelectedTargetWindow.Value.Handle;
+
+            if (isSameProcess && isDifferentHandle)
+            {
+                // リストにあるか確認し、あればそれに切り替える
+                // なければリストを更新してから切り替える必要があるが、まずは既存リストから検索
+                var existingWrapper = AvailableWindows.FirstOrDefault(w => w.Handle == foregroundWindow.Handle);
+                
+                if (existingWrapper != null)
+                {
+                    SelectedTargetWindow.Value = existingWrapper;
+                    // ConfirmWindowはSelectionChangedで呼ばれるが、ここでも明示的に呼ぶか、あるいはSelectionChangedに任せる
+                    // ReactivePropertyの変更通知でUI側のイベントが発火し、ConfirmWindowが走るはず
+                    Messages.Add(new ChatMessage("GuiBuddy-System", $"対象ウィンドウを自動切り替えしました: {existingWrapper.Title}"));
+                }
+                else
+                {
+                    // リストにないのでリロードして再検索
+                    LoadWindows();
+                    existingWrapper = AvailableWindows.FirstOrDefault(w => w.Handle == foregroundWindow.Handle);
+                    if (existingWrapper != null)
+                    {
+                        SelectedTargetWindow.Value = existingWrapper;
+                        Messages.Add(new ChatMessage("GuiBuddy-System", $"対象ウィンドウを自動切り替えしました: {existingWrapper.Title}"));
+                    }
+                }
+            }
+        }
+
         string userText = InputText;
-        InputText = ""; // Clear input, this updates the view but usually safe for cursor if done after send
+        InputText = ""; // Clear input
 
         Messages.Add(new ChatMessage("User", userText));
 
