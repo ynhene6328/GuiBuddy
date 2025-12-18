@@ -11,5 +11,6 @@ public class UIElementInfo
     public string ClassName { get; set; } = string.Empty;
     public Rect Bounds { get; set; }
     public bool IsOffscreen { get; set; }
+    public string RuntimeId { get; set; } = string.Empty;
     public List<UIElementInfo> Children { get; set; } = new();
 }

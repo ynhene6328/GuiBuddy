@@ -83,7 +83,8 @@ public class UIMapService : IUIMapService
             Name = string.IsNullOrWhiteSpace(element.Name) ? null : element.Name,
             AutomationId = string.IsNullOrWhiteSpace(element.AutomationId) ? null : element.AutomationId,
             Bounds = ConvertBounds(element.Bounds),
-            IsOffscreen = element.IsOffscreen
+            IsOffscreen = element.IsOffscreen,
+            RuntimeId = element.RuntimeId
             // Role = ... LocalizedControlTypeを入れる？
         };
 
@@ -138,7 +139,8 @@ public class UIMapService : IUIMapService
             AutomationId = string.IsNullOrWhiteSpace(element.AutomationId) ? null : element.AutomationId,
             Bounds = ConvertBounds(element.Bounds),
             Hint = GenerateHint(element, controlType),
-            IsOffscreen = element.IsOffscreen
+            IsOffscreen = element.IsOffscreen,
+            RuntimeId = element.RuntimeId
         };
 
         foreach (var child in element.Children)

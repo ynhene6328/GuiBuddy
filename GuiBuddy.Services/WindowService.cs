@@ -56,9 +56,9 @@ public class WindowService : IWindowService
     [System.Runtime.InteropServices.DllImport("user32.dll")]
     private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
 
-    public bool ScrollToElement(IntPtr windowHandle, string automationId)
+    public bool ScrollToElement(IntPtr windowHandle, string targetKey, bool useRuntimeId = false)
     {
-        return _repository.ScrollToElement(windowHandle, automationId);
+        return _repository.ScrollToElement(windowHandle, targetKey, useRuntimeId);
     }
 }
 

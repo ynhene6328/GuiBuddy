@@ -6,5 +6,5 @@ public interface IWindowRepository
 {
     IEnumerable<WindowInfo> GetAllWindows();
     UIElementInfo? GetWindowStructure(IntPtr windowHandle);
-    bool ScrollToElement(IntPtr windowHandle, string automationId);
+    bool ScrollToElement(IntPtr windowHandle, string targetKey, bool useRuntimeId = false);
 }

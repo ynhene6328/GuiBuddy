@@ -202,30 +202,48 @@ public class ChatViewModel : INotifyPropertyChanged
                 var node = FindNodeById(CurrentContext, id);
                 if (node != null && node.IsOffscreen)
                 {
-                    string? targetAutomationId = node.AutomationId;
+                    string? targetKey = node.AutomationId;
+                    bool useRuntimeId = false;
 
                     // AutomationIdがない場合、親を遡る
-                    if (string.IsNullOrEmpty(targetAutomationId))
+                    if (string.IsNullOrEmpty(targetKey))
                     {
-                        var path = new List<UiNode>();
-                        if (FindNodePath(CurrentContext, node.Id, path))
+                        // まず自分自身のRuntimeIdをチェック (あれば親遡りは不要かもしれないが念のため)
+                        if (!string.IsNullOrEmpty(node.RuntimeId))
                         {
-                            path.Reverse(); // Target -> Parent -> Root
-                            foreach(var ancestor in path)
+                            targetKey = node.RuntimeId;
+                            useRuntimeId = true;
+                        }
+                        else
+                        {
+                            var path = new List<UiNode>();
+                            if (FindNodePath(CurrentContext, node.Id, path))
                             {
-                                if (!string.IsNullOrEmpty(ancestor.AutomationId))
+                                path.Reverse(); // Target -> Parent -> Root
+                                foreach(var ancestor in path)
                                 {
-                                    targetAutomationId = ancestor.AutomationId;
-                                    break;
+                                    if (!string.IsNullOrEmpty(ancestor.AutomationId))
+                                    {
+                                        targetKey = ancestor.AutomationId;
+                                        useRuntimeId = false;
+                                        break;
+                                    }
+                                    // 祖先のRuntimeIdもチェック
+                                    if (!string.IsNullOrEmpty(ancestor.RuntimeId))
+                                    {
+                                        targetKey = ancestor.RuntimeId;
+                                        useRuntimeId = true;
+                                        break;
+                                    }
                                 }
                             }
                         }
                     }
 
-                    if (!string.IsNullOrEmpty(targetAutomationId))
+                    if (!string.IsNullOrEmpty(targetKey))
                     {
                         // スクロール試行
-                        bool scrollSuccess = _windowService.ScrollToElement(SelectedTargetWindow.Value!.Handle, targetAutomationId);
+                        bool scrollSuccess = _windowService.ScrollToElement(SelectedTargetWindow.Value!.Handle, targetKey, useRuntimeId);
                         if (scrollSuccess)
                         {
                             needRefresh = true;

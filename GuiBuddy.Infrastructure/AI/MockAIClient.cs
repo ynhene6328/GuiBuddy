@@ -12,7 +12,31 @@ public class MockAIClient : IAIClient
         // If prompt contains "ボタン", assume user wants to find a button.
         // We act as if we found a button with ID 2 (usually a child of root).
         
-        var response = new AIResponse("はい、何でしょうか？ 具体的な操作を指示してください。");
+        // Mock Logic: Input "scroll:123" or "target:123" to target a specific ID
+        var message = request.UserMessage;
+        var response = new AIResponse("Mock Response");
+
+        if (message.Contains("target:"))
+        {
+            var parts = message.Split(new[] { "target:" }, StringSplitOptions.None);
+            if (parts.Length > 1 && int.TryParse(parts[1].Trim(), out int id))
+            {
+                response.ResponseText = $"Mock Target ID: {id}";
+                response.TargetElementIds.Add(id);
+                return Task.FromResult(response);
+            }
+        }
+        
+        if (message.Contains("scroll:"))
+        {
+            var parts = message.Split(new[] { "scroll:" }, StringSplitOptions.None);
+            if (parts.Length > 1 && int.TryParse(parts[1].Trim(), out int id))
+            {
+                response.ResponseText = $"Mock Scroll Request ID: {id}";
+                response.TargetElementIds.Add(id);
+                return Task.FromResult(response);
+            }
+        }
 
         if (request.UserMessage.Contains("ボタン"))
         {

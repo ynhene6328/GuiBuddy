@@ -41,6 +41,8 @@ public partial class App : Application
 
         // Chat
         services.AddSingleton<IAIClient, GuiBuddy.Infrastructure.AI.GeminiSdkClient>();
+        // For Debugging without AI access
+        // services.AddSingleton<IAIClient, GuiBuddy.Infrastructure.AI.MockAIClient>();
         services.AddSingleton<IChatService, ChatService>();
 
         // App

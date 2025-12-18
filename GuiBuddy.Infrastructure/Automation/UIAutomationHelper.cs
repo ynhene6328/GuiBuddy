@@ -32,6 +32,7 @@ public class UIAutomationHelper
         cacheRequest.Add(AutomationElement.ClassNameProperty);
         cacheRequest.Add(AutomationElement.BoundingRectangleProperty);
         cacheRequest.Add(AutomationElement.IsOffscreenProperty);
+        cacheRequest.Add(AutomationElement.RuntimeIdProperty);
         cacheRequest.TreeScope = TreeScope.Element | TreeScope.Subtree;
 
         // キャッシュを有効にして要素を取得
@@ -73,6 +74,30 @@ public class UIAutomationHelper
         }
         catch { }
 
+        // RuntimeIdの文字列化
+        string runtimeIdStr = string.Empty;
+        try
+        {
+            int[] runtimeId = element.GetRuntimeId(); // Cachedから取るべきだが、GetRuntimeId()メソッドは内部で適切に処理するか確認が必要。通常はCachedプロパティではないので直接呼ぶか、あるいはCachedプロパティ辞書から取る。
+            // しかしCacheRequestにRuntimeIdPropertyを入れても、element.Cached.RuntimeIdのようなプロパティは公開されていないため、GetRuntimeId()がキャッシュを使うかは実装依存。
+            // .NET FrameworkのUI AutomationではGetRuntimeId()はキャッシュを使わない場合があるが、ここでは例外処理でガードしつつ呼ぶ。
+            // あるいは element.GetCachedPropertyValue(AutomationElement.RuntimeIdProperty) を使うのが正解。
+            if (runtimeId != null)
+            {
+                 runtimeIdStr = string.Join(",", runtimeId);
+            }
+        }
+        catch 
+        {
+            // Try explicit property retrieval from cache
+            try
+            {
+                 var rid = element.GetCachedPropertyValue(AutomationElement.RuntimeIdProperty) as int[];
+                 if (rid != null) runtimeIdStr = string.Join(",", rid);
+            }
+            catch {}
+        }
+
         var info = new UIElementInfo
         {
             Name = element.Cached.Name ?? string.Empty,
@@ -81,7 +106,8 @@ public class UIAutomationHelper
             HelpText = element.Cached.HelpText ?? string.Empty,
             ClassName = element.Cached.ClassName ?? string.Empty,
             Bounds = element.Cached.BoundingRectangle,
-            IsOffscreen = element.Cached.IsOffscreen
+            IsOffscreen = element.Cached.IsOffscreen,
+            RuntimeId = runtimeIdStr
         };
 
         // ControlViewWalkerを使用して子要素を走査
@@ -100,19 +126,62 @@ public class UIAutomationHelper
         return info;
     }
 
-    public bool ScrollToElement(AutomationElement root, string targetAutomationId)
+    public bool ScrollToElement(AutomationElement root, string targetKey, bool useRuntimeId = false)
     {
         if (root == null) return false;
 
-        // ターゲット要素を名前やIDで検索
-        // ここではAutomationIdを主キーとするが、必要に応じて他の条件も追加可能
-        // 注: TreeScope.Descendantsは重いため、本来は必要な階層まで絞るか、IDが一意であることを前提とする
-        var condition = new PropertyCondition(AutomationElement.AutomationIdProperty, targetAutomationId);
-        var targetElement = root.FindFirst(TreeScope.Descendants, condition);
+        AutomationElement? targetElement = null;
+
+        if (useRuntimeId)
+        {
+            // RuntimeIdで検索 (再帰的探索が必要)
+            // TreeWalker.ControlViewWalker等は遅いが、FindFirstでCondition指定が難しいため
+            // ここでは TreeScope.Descendants で全取得してフィルタリングするよりも、
+            // FindFirst(TreeScope.Descendants, TrueCondition) で列挙してからチェックするほうが、
+            // 特定のプロパティ条件より汎用的かもしれないが、パフォーマンスが懸念される。
+            // しかし RuntimeId は PropertyCondition でサポートされない（配列比較のため）。
+            // したがって、カスタム探索を行う。
+            targetElement = FindElementByRuntimeId(root, targetKey);
+        }
+        else
+        {
+            // AutomationIdで検索
+            var condition = new PropertyCondition(AutomationElement.AutomationIdProperty, targetKey);
+            targetElement = root.FindFirst(TreeScope.Descendants, condition);
+        }
 
         if (targetElement == null) return false;
 
         return EnsureElementVisible(targetElement);
+    }
+
+    private AutomationElement? FindElementByRuntimeId(AutomationElement root, string targetRuntimeId)
+    {
+        // Breadth-first or Depth-first search
+        // FindFirst with TrueCondition creates a collection, which might be heavy but easiest to implement
+        // Or using RawViewWalker
+        
+        // 簡易実装: 全要素をフラットに取得して比較
+        // 注意: GetRuntimeId()呼び出しはコストがかかる可能性がある
+        try
+        {
+            var allElements = root.FindAll(TreeScope.Descendants, System.Windows.Automation.Condition.TrueCondition);
+            foreach (AutomationElement element in allElements)
+            {
+                try
+                {
+                    int[] rid = element.GetRuntimeId();
+                    if (rid != null && string.Join(",", rid) == targetRuntimeId)
+                    {
+                        return element;
+                    }
+                }
+                catch { }
+            }
+        }
+        catch { }
+
+        return null; // Not found
     }
 
     private bool EnsureElementVisible(AutomationElement element)

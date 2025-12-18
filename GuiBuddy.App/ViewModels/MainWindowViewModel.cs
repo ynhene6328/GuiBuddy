@@ -85,40 +85,60 @@ public class MainWindowViewModel : INotifyPropertyChanged
         if (SelectedWindow.Value == null || SelectedNode.Value == null) return;
 
         UIElementInfo? targetNode = SelectedNode.Value;
-        string? targetAutomationId = targetNode.AutomationId;
+        string? targetKey = targetNode.AutomationId;
+        bool useRuntimeId = false;
 
         // AutomationIdがない場合、親を遡って有効なIDを持つ要素を探す
         // StructureはObservableCollection<UIElementInfo>だが、通常ルートは1つだけ入っている
-        if (string.IsNullOrEmpty(targetAutomationId) && Structure.Count > 0)
+        if (string.IsNullOrEmpty(targetKey))
         {
-            var root = Structure[0];
-            var path = new List<UIElementInfo>();
-            if (FindPath(root, targetNode, path))
+             // まず自分自身のRuntimeId
+            if (!string.IsNullOrEmpty(targetNode.RuntimeId))
             {
-                // パスは Root -> Parent -> Target の順
-                // 逆順（Target -> Parent -> Root）に探索
-                path.Reverse();
-                foreach (var node in path)
+                targetKey = targetNode.RuntimeId;
+                useRuntimeId = true;
+                StatusMessage.Value = $"Target has no AutomationId. Using RuntimeId: {targetNode.RuntimeId}";
+            }
+            else if (Structure.Count > 0)
+            {
+                var root = Structure[0];
+                var path = new List<UIElementInfo>();
+                if (FindPath(root, targetNode, path))
                 {
-                    if (!string.IsNullOrEmpty(node.AutomationId))
+                    // パスは Root -> Parent -> Target の順
+                    // 逆順（Target -> Parent -> Root）に探索
+                    path.Reverse();
+                    foreach (var node in path)
                     {
-                        targetNode = node;
-                        targetAutomationId = node.AutomationId;
-                        StatusMessage.Value = $"Target has no ID. Creating path and using ancestor: {node.Name} ({node.AutomationId})";
-                        break;
+                        if (!string.IsNullOrEmpty(node.AutomationId))
+                        {
+                            targetNode = node;
+                            targetKey = node.AutomationId;
+                            useRuntimeId = false;
+                            StatusMessage.Value = $"Target has no ID. Creating path and using ancestor: {node.Name} ({node.AutomationId})";
+                            break;
+                        }
+                         if (!string.IsNullOrEmpty(node.RuntimeId))
+                        {
+                            targetNode = node;
+                            targetKey = node.RuntimeId;
+                            useRuntimeId = true;
+                            StatusMessage.Value = $"Target has no ID. Creating path and using ancestor: {node.Name} (RuntimeId: {node.RuntimeId})";
+                            break;
+                        }
                     }
                 }
             }
         }
 
-        if (string.IsNullOrEmpty(targetAutomationId))
+        if (string.IsNullOrEmpty(targetKey))
         {
-            StatusMessage.Value = "Scroll Error: No AutomationId found in node or any ancestor.";
+            StatusMessage.Value = "Scroll Error: No AutomationId or RuntimeId found in node or any ancestor.";
             return;
         }
 
-        StatusMessage.Value = $"Scrolling into view: {targetNode?.Name} ({targetAutomationId})...";
-        bool success = _windowService.ScrollToElement(SelectedWindow.Value.Handle, targetAutomationId);
+        StatusMessage.Value = $"Scrolling into view: {targetNode?.Name} ({(useRuntimeId ? "RuntimeId" : "AutomationId")}: {targetKey})...";
+        bool success = _windowService.ScrollToElement(SelectedWindow.Value.Handle, targetKey, useRuntimeId);
         
         if (success)
         {

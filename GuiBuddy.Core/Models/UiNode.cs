@@ -21,6 +21,9 @@ public class UiNode
 
     [JsonIgnore]
     public bool IsOffscreen { get; set; }
+    
+    [JsonIgnore]
+    public string RuntimeId { get; set; } = string.Empty;
 
     public List<UiNode> Children { get; set; } = new();
 
