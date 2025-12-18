@@ -27,7 +27,7 @@ public class ChatService : IChatService
             "実際の GUI 操作はユーザが行います。\n"+
             "\n"+
             "- ユーザの入力と文脈から「現在の最終目的」を抽出してください\n"+
-            "- 必ず [USER_GOAL] ～ [/USER_GOAL] 形式で出力してください\n"+
+            "- 回答の先頭には必ず、[USER_GOAL]現在の最終目的[/USER_GOAL] を出力してください、「現在の最終目的」は抽出した内容に置き換えてください\n"+
             "- UI 操作が必要だと判断した場合のみ、説明文の最後に [HIGHLIGHT:要素ID] を付けてください\n"+
             "- 操作は提案のみ行い、断定的な命令は避けてください";
         request.UserGoal = _currentUserGoal;
