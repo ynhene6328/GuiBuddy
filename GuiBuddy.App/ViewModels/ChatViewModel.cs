@@ -200,17 +200,40 @@ public class ChatViewModel : INotifyPropertyChanged
             foreach (var id in targetIds)
             {
                 var node = FindNodeById(CurrentContext, id);
-                if (node != null && node.IsOffscreen && !string.IsNullOrEmpty(node.AutomationId))
+                if (node != null && node.IsOffscreen)
                 {
-                    // スクロール試行
-                    bool scrollSuccess = _windowService.ScrollToElement(SelectedTargetWindow.Value!.Handle, node.AutomationId);
-                    if (scrollSuccess)
+                    string? targetAutomationId = node.AutomationId;
+
+                    // AutomationIdがない場合、親を遡る
+                    if (string.IsNullOrEmpty(targetAutomationId))
                     {
-                        needRefresh = true;
+                        var path = new List<UiNode>();
+                        if (FindNodePath(CurrentContext, node.Id, path))
+                        {
+                            path.Reverse(); // Target -> Parent -> Root
+                            foreach(var ancestor in path)
+                            {
+                                if (!string.IsNullOrEmpty(ancestor.AutomationId))
+                                {
+                                    targetAutomationId = ancestor.AutomationId;
+                                    break;
+                                }
+                            }
+                        }
                     }
-                    else
+
+                    if (!string.IsNullOrEmpty(targetAutomationId))
                     {
-                        Messages.Add(new ChatMessage("GuiBuddy-System", $"注意: 対象要素の一つが画面外ですが、スクロールできませんでした。(ID: {id})"));
+                        // スクロール試行
+                        bool scrollSuccess = _windowService.ScrollToElement(SelectedTargetWindow.Value!.Handle, targetAutomationId);
+                        if (scrollSuccess)
+                        {
+                            needRefresh = true;
+                        }
+                        else
+                        {
+                            Messages.Add(new ChatMessage("GuiBuddy-System", $"注意: 対象要素の一つが画面外ですが、スクロールできませんでした。(ID: {id})"));
+                        }
                     }
                 }
             }
@@ -266,5 +289,19 @@ public class ChatViewModel : INotifyPropertyChanged
             if (found != null) return found;
         }
         return null;
+    }
+
+    private bool FindNodePath(UiNode current, int targetId, List<UiNode> path)
+    {
+        path.Add(current);
+        if (current.Id == targetId) return true;
+
+        foreach (var child in current.Children)
+        {
+            if (FindNodePath(child, targetId, path)) return true;
+        }
+
+        path.RemoveAt(path.Count - 1);
+        return false;
     }
 }
