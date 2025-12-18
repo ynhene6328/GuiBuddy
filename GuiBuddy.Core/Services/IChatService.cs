@@ -5,5 +5,5 @@ namespace GuiBuddy.Core.Services;
 
 public interface IChatService
 {
-    Task<string> SendMessageAsync(string userMessage, UiNode? appContext);
+    Task<AIResponse> SendMessageAsync(string userMessage, UiNode? appContext);
 }

@@ -63,5 +63,17 @@ public class AutomationWindowRepository : IWindowRepository
             return null;
         }
     }
+    public bool ScrollToElement(IntPtr windowHandle, string automationId)
+    {
+        try
+        {
+            var root = AutomationElement.FromHandle(windowHandle);
+            return _helper.ScrollToElement(root, automationId);
+        }
+        catch
+        {
+            return false;
+        }
+    }
 }
 

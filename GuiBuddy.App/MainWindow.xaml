@@ -73,23 +73,30 @@
                         <!-- Debug Tree & JSON -->
                         <TabControl Grid.Column="2">
                             <TabItem Header="Tree Structure">
-                                <TreeView ItemsSource="{Binding Structure}">
-                                    <TreeView.ItemTemplate>
-                                        <HierarchicalDataTemplate ItemsSource="{Binding Children}">
-                                            <StackPanel Orientation="Horizontal">
-                                                <TextBlock Text="[" Foreground="Blue"/>
-                                                <TextBlock Text="{Binding ControlType}" Foreground="Blue"/>
-                                                <TextBlock Text="] " Foreground="Blue"/>
-                                                <TextBlock Text="{Binding Name}" FontWeight="Bold"/>
-                                                <TextBlock Text=" (#" Foreground="Gray"/>
-                                                <TextBlock Text="{Binding AutomationId}" Foreground="Gray"/>
-                                                <TextBlock Text=")" Foreground="Gray"/>
-                                                <TextBlock Text=" "/>
-                                                <TextBlock Text="{Binding Bounds}" FontSize="10" VerticalAlignment="Center"/>
-                                            </StackPanel>
-                                        </HierarchicalDataTemplate>
-                                    </TreeView.ItemTemplate>
-                                </TreeView>
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="*"/>
+                                    </Grid.RowDefinitions>
+                                    <Button Grid.Row="0" Content="Scroll to Selected (Debug)" Command="{Binding DebugScrollCommand}" Margin="0,0,0,5"/>
+                                    <TreeView Grid.Row="1" ItemsSource="{Binding Structure}" SelectedItemChanged="TreeView_SelectedItemChanged">
+                                        <TreeView.ItemTemplate>
+                                            <HierarchicalDataTemplate ItemsSource="{Binding Children}">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Text="[" Foreground="Blue"/>
+                                                    <TextBlock Text="{Binding ControlType}" Foreground="Blue"/>
+                                                    <TextBlock Text="] " Foreground="Blue"/>
+                                                    <TextBlock Text="{Binding Name}" FontWeight="Bold"/>
+                                                    <TextBlock Text=" (#" Foreground="Gray"/>
+                                                    <TextBlock Text="{Binding AutomationId}" Foreground="Gray"/>
+                                                    <TextBlock Text=")" Foreground="Gray"/>
+                                                    <TextBlock Text=" "/>
+                                                    <TextBlock Text="{Binding Bounds}" FontSize="10" VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                            </HierarchicalDataTemplate>
+                                        </TreeView.ItemTemplate>
+                                    </TreeView>
+                                </Grid>
                             </TabItem>
                             <TabItem Header="Internal Map (JSON)">
                                 <TextBox Text="{Binding UIMapJson.Value}" IsReadOnly="True" 

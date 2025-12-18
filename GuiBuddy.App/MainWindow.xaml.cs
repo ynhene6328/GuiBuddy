@@ -22,4 +22,12 @@ public partial class MainWindow : Window
         InitializeComponent();
         DataContext = viewModel;
     }
+
+    private void TreeView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
+    {
+        if (DataContext is MainWindowViewModel vm)
+        {
+            vm.SelectedNode.Value = e.NewValue as GuiBuddy.Core.Models.UIElementInfo;
+        }
+    }
 }

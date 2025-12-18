@@ -24,6 +24,10 @@ public class MainWindowViewModel : INotifyPropertyChanged
     public ReactiveCommand GenerateMapCommand { get; }
     public ReactiveCommand ShowOverlayCommand { get; }
     public ReactiveCommand CloseOverlayCommand { get; }
+    
+    // Debug Scroll
+    public ReactiveProperty<UIElementInfo?> SelectedNode { get; } = new();
+    public ReactiveCommand DebugScrollCommand { get; }
 
     // Debug View Toggle
     public ReactiveProperty<bool> IsDebugVisible { get; } = new(false);
@@ -66,9 +70,80 @@ public class MainWindowViewModel : INotifyPropertyChanged
         ToggleDebugCommand = new ReactiveCommand();
         ToggleDebugCommand.Subscribe(_ => IsDebugVisible.Value = !IsDebugVisible.Value);
 
+        DebugScrollCommand = SelectedNode
+            .Select(n => n != null)
+            .ToReactiveCommand();
+        DebugScrollCommand.Subscribe(_ => DebugScroll());
+
         // ChatViewModelからのウィンドウ確定通知を受け取る
         ChatViewModel.WindowConfirmed += OnChatWindowConfirmed;
         ChatViewModel.OpenSettingsRequested += ShowSettings;
+    }
+
+    private void DebugScroll()
+    {
+        if (SelectedWindow.Value == null || SelectedNode.Value == null) return;
+
+        UIElementInfo? targetNode = SelectedNode.Value;
+        string? targetAutomationId = targetNode.AutomationId;
+
+        // AutomationIdがない場合、親を遡って有効なIDを持つ要素を探す
+        // StructureはObservableCollection<UIElementInfo>だが、通常ルートは1つだけ入っている
+        if (string.IsNullOrEmpty(targetAutomationId) && Structure.Count > 0)
+        {
+            var root = Structure[0];
+            var path = new List<UIElementInfo>();
+            if (FindPath(root, targetNode, path))
+            {
+                // パスは Root -> Parent -> Target の順
+                // 逆順（Target -> Parent -> Root）に探索
+                path.Reverse();
+                foreach (var node in path)
+                {
+                    if (!string.IsNullOrEmpty(node.AutomationId))
+                    {
+                        targetNode = node;
+                        targetAutomationId = node.AutomationId;
+                        StatusMessage.Value = $"Target has no ID. Creating path and using ancestor: {node.Name} ({node.AutomationId})";
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (string.IsNullOrEmpty(targetAutomationId))
+        {
+            StatusMessage.Value = "Scroll Error: No AutomationId found in node or any ancestor.";
+            return;
+        }
+
+        StatusMessage.Value = $"Scrolling into view: {targetNode?.Name} ({targetAutomationId})...";
+        bool success = _windowService.ScrollToElement(SelectedWindow.Value.Handle, targetAutomationId);
+        
+        if (success)
+        {
+            StatusMessage.Value = "Scroll Success. Refreshing structure...";
+            // スクロール後は位置が変わっているため再取得
+            GetStructure();
+        }
+        else
+        {
+            StatusMessage.Value = "Scroll Failed (Not scrollable or not found).";
+        }
+    }
+
+    private bool FindPath(UIElementInfo current, UIElementInfo target, List<UIElementInfo> path)
+    {
+        path.Add(current);
+        if (current == target) return true;
+
+        foreach (var child in current.Children)
+        {
+            if (FindPath(child, target, path)) return true;
+        }
+
+        path.RemoveAt(path.Count - 1);
+        return false;
     }
 
     private void OnChatWindowConfirmed(WindowInfo window)
