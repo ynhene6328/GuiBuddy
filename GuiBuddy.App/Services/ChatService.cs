@@ -10,6 +10,7 @@ public class ChatService : IChatService
 {
     private readonly IAIClient _aiClient;
     private readonly IOverlayService _overlayService;
+    private string? _currentUserGoal;
 
     public ChatService(IAIClient aiClient, IOverlayService overlayService)
     {
@@ -22,14 +23,23 @@ public class ChatService : IChatService
         // AIRequestの作成
         var request = new AIRequest(userMessage, appContext);
         request.SystemInstruction = 
-            "あなたはGUI操作アシスタントです。提供された[Current UI Context]を分析し、ユーザーの要望に最も合致するUI要素を特定してください。\n" +
-            "回答の最後には必ず、特定した要素のIDを `[HIGHLIGHT:数値]` の形式で付記してください。\n" +
-            "例: 「保存ボタンはこちらです。[HIGHLIGHT:123]」\n" +
-            "該当する要素がない場合は、その理由を説明してください。";
-        
+            "あなたは GUI 操作を支援するアシスタントです。\n" +
+            "実際の GUI 操作はユーザが行います。\n"+
+            "\n"+
+            "- ユーザの入力と文脈から「現在の最終目的」を抽出してください\n"+
+            "- 必ず [USER_GOAL] ～ [/USER_GOAL] 形式で出力してください\n"+
+            "- UI 操作が必要だと判断した場合のみ、説明文の最後に [HIGHLIGHT:要素ID] を付けてください\n"+
+            "- 操作は提案のみ行い、断定的な命令は避けてください";
+        request.UserGoal = _currentUserGoal;
+
         // AIクライアントへの送信
         AIResponse response = await _aiClient.SendAsync(request);
 
+        // USER_GOAL の更新
+        if (!string.IsNullOrWhiteSpace(response.UserGoal))
+        {
+            _currentUserGoal = response.UserGoal;
+        }
         // ハイライトIDの処理
         if (response.TargetElementIds != null && response.TargetElementIds.Count > 0)
         {

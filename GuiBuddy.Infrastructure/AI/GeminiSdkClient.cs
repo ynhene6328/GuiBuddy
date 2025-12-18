@@ -74,6 +74,13 @@ public class GeminiSdkClient : IAIClient
             sb.AppendLine();
         }
 
+        // USER_GOAL
+        if (!string.IsNullOrEmpty(request.UserGoal))
+        {
+            sb.AppendLine("[Current USER_GOAL]");
+            sb.AppendLine(request.UserGoal);
+            sb.AppendLine();
+        }
         // Context (UI Elements)
         if (request.Context != null)
         {
@@ -115,6 +122,17 @@ public class GeminiSdkClient : IAIClient
     {
         var aiResponse = new AIResponse(rawText);
 
+        // USER_GOAL 抽出
+        var goalMatch = Regex.Match(
+            rawText,
+            @"\[USER_GOAL\](.*?)\[/USER_GOAL\]",
+            RegexOptions.Singleline | RegexOptions.IgnoreCase);
+
+        if (goalMatch.Success)
+        {
+            aiResponse.UserGoal = goalMatch.Groups[1].Value.Trim();
+        }
+
         // Extract [HIGHLIGHT:123] pattern
         // Regex to find multiple highlights if present
         var matches = Regex.Matches(rawText, @"\[HIGHLIGHT:\s*(\d+)\]", RegexOptions.IgnoreCase);
@@ -127,7 +145,9 @@ public class GeminiSdkClient : IAIClient
         }
 
         // Optional: Remove tags from display text
-        aiResponse.ResponseText = Regex.Replace(rawText, @"\[HIGHLIGHT:\s*\d+\]", "", RegexOptions.IgnoreCase).Trim();
+        var replaceText = Regex.Replace(rawText, @"\[USER_GOAL\](.*?)\[/USER_GOAL\]", "", RegexOptions.Singleline | RegexOptions.IgnoreCase).Trim();
+        replaceText = Regex.Replace(replaceText, @"\[HIGHLIGHT:\s*\d+\]", "", RegexOptions.IgnoreCase).Trim();
+        aiResponse.ResponseText = replaceText;
 
         return aiResponse;
     }
