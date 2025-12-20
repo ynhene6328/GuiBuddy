@@ -30,6 +30,6 @@ public class AIProviderInfo
     {
         new AIProviderInfo("Gemini", new[] { "gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-pro" }),
         new AIProviderInfo("OpenAI", new[] { "gpt-4o", "gpt-4o-mini", "o1" }),
-        // 将来的に追加: Claude, etc.
+        new AIProviderInfo("OpenRouter", new[] { "nvidia/nemotron-3-nano-30b-a3b:free", "nvidia/llama-3.1-nemotron-70b-instruct" }),
     };
 }

@@ -24,6 +24,7 @@ public class AIClientFactory : IAIClientFactory
         {
             "Gemini" => new GeminiSdkClient(_settingsService, _responseParser, model),
             "OpenAI" => new OpenAIClient(_settingsService, _responseParser, model),
+            "OpenRouter" => new OpenRouterClient(_settingsService, _responseParser, model),
             _ => throw new NotSupportedException($"プロバイダー '{provider}' はサポートされていません。")
         };
     }
