@@ -9,6 +9,8 @@ public class AIResponse
     public double? Confidence { get; set; }
     public string? UserGoal { get; set; }
 
+    public AIContent? Content { get; set; }
+
     public AIResponse(string responseText)
     {
         ResponseText = responseText;

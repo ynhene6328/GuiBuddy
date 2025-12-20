@@ -54,7 +54,7 @@ public class GeminiSdkClient : IAIClient
                 }
             }
             
-            return ParseResponse(responseText);
+            return new AIResponse(responseText);
         }
         catch (Exception ex)
         {
@@ -116,39 +116,5 @@ public class GeminiSdkClient : IAIClient
         {
             SummarizeNodeRecursive(child, sb, depth + 1);
         }
-    }
-
-    private AIResponse ParseResponse(string rawText)
-    {
-        var aiResponse = new AIResponse(rawText);
-
-        // USER_GOAL 抽出
-        var goalMatch = Regex.Match(
-            rawText,
-            @"\[USER_GOAL\](.*?)\[/USER_GOAL\]",
-            RegexOptions.Singleline | RegexOptions.IgnoreCase);
-
-        if (goalMatch.Success)
-        {
-            aiResponse.UserGoal = goalMatch.Groups[1].Value.Trim();
-        }
-
-        // Extract [HIGHLIGHT:123] pattern
-        // Regex to find multiple highlights if present
-        var matches = Regex.Matches(rawText, @"\[HIGHLIGHT:\s*(\d+)\]", RegexOptions.IgnoreCase);
-        foreach (Match match in matches)
-        {
-            if (int.TryParse(match.Groups[1].Value, out int id))
-            {
-                aiResponse.TargetElementIds.Add(id);
-            }
-        }
-
-        // Optional: Remove tags from display text
-        var replaceText = Regex.Replace(rawText, @"\[USER_GOAL\](.*?)\[/USER_GOAL\]", "", RegexOptions.Singleline | RegexOptions.IgnoreCase).Trim();
-        replaceText = Regex.Replace(replaceText, @"\[HIGHLIGHT:\s*\d+\]", "", RegexOptions.IgnoreCase).Trim();
-        aiResponse.ResponseText = replaceText;
-
-        return aiResponse;
     }
 }
