@@ -10,6 +10,8 @@ namespace GuiBuddy.Infrastructure.Services;
 public class SettingsService : ISettingsService
 {
     private const string SettingsFileName = "settings.json";
+    private const string DefaultProvider = "Gemini";
+    private const string DefaultModel = "gemini-2.5-flash";
     private readonly string _settingsFilePath;
 
     public SettingsService()
@@ -20,6 +22,8 @@ public class SettingsService : ISettingsService
         Directory.CreateDirectory(appDir);
         _settingsFilePath = Path.Combine(appDir, SettingsFileName);
     }
+
+    // --- APIキー管理 ---
 
     public void SaveApiKey(string provider, string key)
     {
@@ -35,7 +39,7 @@ public class SettingsService : ISettingsService
         else
         {
             // Windows DPAPIで暗号化 (CurrentUserスコープ)
-            byte[] entropy = Encoding.UTF8.GetBytes("GuiBuddy-Salt"); // 追加のエントロピー
+            byte[] entropy = Encoding.UTF8.GetBytes("GuiBuddy-Salt");
             byte[] encryptedData = ProtectedData.Protect(
                 Encoding.UTF8.GetBytes(key),
                 entropy,
@@ -65,12 +69,41 @@ public class SettingsService : ISettingsService
             }
             catch
             {
-                // 復号化失敗時はnullを返す (データ破損や他ユーザーコンテキストなど)
                 return null;
             }
         }
         return null;
     }
+
+    // --- プロバイダー/モデル選択 ---
+
+    public string GetSelectedProvider()
+    {
+        var settings = LoadSettings();
+        return string.IsNullOrEmpty(settings.SelectedProvider) ? DefaultProvider : settings.SelectedProvider;
+    }
+
+    public void SetSelectedProvider(string provider)
+    {
+        var settings = LoadSettings();
+        settings.SelectedProvider = provider;
+        SaveSettings(settings);
+    }
+
+    public string GetSelectedModel()
+    {
+        var settings = LoadSettings();
+        return string.IsNullOrEmpty(settings.SelectedModel) ? DefaultModel : settings.SelectedModel;
+    }
+
+    public void SetSelectedModel(string model)
+    {
+        var settings = LoadSettings();
+        settings.SelectedModel = model;
+        SaveSettings(settings);
+    }
+
+    // --- 内部処理 ---
 
     private AppSettings LoadSettings()
     {
@@ -99,5 +132,8 @@ public class SettingsService : ISettingsService
     private class AppSettings
     {
         public System.Collections.Generic.Dictionary<string, string> ApiKeys { get; set; } = new();
+        public string SelectedProvider { get; set; } = string.Empty;
+        public string SelectedModel { get; set; } = string.Empty;
     }
 }
+

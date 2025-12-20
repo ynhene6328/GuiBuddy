@@ -8,13 +8,13 @@ namespace GuiBuddy.App.Services;
 
 public class ChatService : IChatService
 {
-    private readonly IAIClient _aiClient;
+    private readonly IAIClientFactory _aiClientFactory;
     private readonly IPromptService _promptService;
     private string? _currentUserGoal;
 
-    public ChatService(IAIClient aiClient, IPromptService promptService)
+    public ChatService(IAIClientFactory aiClientFactory, IPromptService promptService)
     {
-        _aiClient = aiClient;
+        _aiClientFactory = aiClientFactory;
         _promptService = promptService;
     }
 
@@ -48,8 +48,11 @@ public class ChatService : IChatService
         // AIクライアントへの送信用リクエストを作成
         var sendRequest = new AIRequest(fullPrompt, null);
 
+        // ファクトリから現在の設定に基づいたクライアントを取得
+        var aiClient = _aiClientFactory.CreateFromSettings();
+
         // AIクライアントへの送信（パース済みのレスポンスが返る）
-        AIResponse response = await _aiClient.SendAsync(sendRequest);
+        AIResponse response = await aiClient.SendAsync(sendRequest);
 
         // UserGoalの状態更新
         if (!string.IsNullOrWhiteSpace(response.UserGoal))

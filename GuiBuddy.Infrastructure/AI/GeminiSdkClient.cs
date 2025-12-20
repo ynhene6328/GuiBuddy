@@ -11,13 +11,14 @@ public class GeminiSdkClient : IAIClient
 {
     private readonly ISettingsService _settingsService;
     private readonly IResponseParser _responseParser;
+    private readonly string _modelName;
     private const string ProviderName = "Gemini";
-    private const string ModelName = "gemini-2.5-flash";
 
-    public GeminiSdkClient(ISettingsService settingsService, IResponseParser responseParser)
+    public GeminiSdkClient(ISettingsService settingsService, IResponseParser responseParser, string modelName = "gemini-2.5-flash")
     {
         _settingsService = settingsService;
         _responseParser = responseParser;
+        _modelName = modelName;
     }
 
     public async Task<AIResponse> SendAsync(AIRequest request)
@@ -36,7 +37,7 @@ public class GeminiSdkClient : IAIClient
             string promptToSend = request.UserMessage;
 
             var response = await client.Models.GenerateContentAsync(
-                ModelName, 
+                _modelName, 
                 promptToSend
             );
 

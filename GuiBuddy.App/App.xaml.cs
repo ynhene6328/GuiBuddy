@@ -41,10 +41,10 @@ public partial class App : Application
         services.AddSingleton<IResponseParser, ResponseParser>();
         services.AddSingleton<ISettingsService, GuiBuddy.Infrastructure.Services.SettingsService>();
 
+        // AI Client Factory
+        services.AddSingleton<IAIClientFactory, GuiBuddy.Infrastructure.AI.AIClientFactory>();
+        
         // Chat
-        services.AddSingleton<IAIClient, GuiBuddy.Infrastructure.AI.GeminiSdkClient>();
-        // For Debugging without AI access
-        // services.AddSingleton<IAIClient, GuiBuddy.Infrastructure.AI.MockAIClient>();
         services.AddSingleton<IChatService, ChatService>();
 
         // App
