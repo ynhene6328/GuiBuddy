@@ -10,17 +10,19 @@ public class ChatService : IChatService
 {
     private readonly IAIClient _aiClient;
     private readonly IOverlayService _overlayService;
+    private readonly IPromptService _promptService;
     private string? _currentUserGoal;
 
-    public ChatService(IAIClient aiClient, IOverlayService overlayService)
+    public ChatService(IAIClient aiClient, IOverlayService overlayService, IPromptService promptService)
     {
         _aiClient = aiClient;
         _overlayService = overlayService;
+        _promptService = promptService;
     }
 
     public async Task<AIResponse> SendMessageAsync(string userMessage, UiNode? appContext)
     {
-        // AIRequestの作成
+        // AIRequestの作成（生データ）
         var request = new AIRequest(userMessage, appContext);
         request.SystemInstruction = 
             "あなたは GUI 操作を支援するアシスタントです。\n" +
@@ -41,8 +43,23 @@ public class ChatService : IChatService
         
         request.UserGoal = _currentUserGoal;
 
+        // プロンプト構築 (ここでコンテキストや指示を全て結合した文字列にする)
+        string fullPrompt = _promptService.BuildFullPrompt(request);
+
+        // AIクライアントへの送信用リクエストを作成
+        // SystemInstructionやContextは既にfullPromptに含まれているため、送信時は空にするか、
+        // AIClient側で二重に追加しないように注意が必要だが、
+        // 今回のリファクタリングでAIClientは単にUserMessageを送るだけにするため、
+        // UserMessageにfullPromptをセットして渡す。
+        var sendRequest = new AIRequest(fullPrompt, null)
+        {
+            // SystemInstruction, UserGoalなどは結合済みなので空で渡す
+            SystemInstruction = string.Empty,
+            UserGoal = string.Empty 
+        };
+
         // AIクライアントへの送信
-        AIResponse rawResponse = await _aiClient.SendAsync(request);
+        AIResponse rawResponse = await _aiClient.SendAsync(sendRequest);
 
         // JSON解析と構造化データの構築
         try 
