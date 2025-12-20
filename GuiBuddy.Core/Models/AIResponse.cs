@@ -4,12 +4,12 @@ namespace GuiBuddy.Core.Models;
 
 public class AIResponse
 {
-    public string ResponseText { get; set; } = string.Empty;
-    public List<int> TargetElementIds { get; set; } = new();
-    public double? Confidence { get; set; }
-    public string? UserGoal { get; set; }
+    public string ResponseText { get; init; } = string.Empty;
+    public IReadOnlyList<int> TargetElementIds { get; init; } = Array.Empty<int>();
+    public double? Confidence { get; init; }
+    public string? UserGoal { get; init; }
 
-    public AIContent? Content { get; set; }
+    public AIContent? Content { get; init; }
 
     public AIResponse(string responseText)
     {

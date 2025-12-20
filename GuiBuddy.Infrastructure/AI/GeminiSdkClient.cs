@@ -1,9 +1,7 @@
 using System;
-using System.Linq;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using Google.GenAI; // Namespace based on package name, verification needed during build
+using Google.GenAI;
 using GuiBuddy.Core.Models;
 using GuiBuddy.Core.Services;
 
@@ -12,12 +10,14 @@ namespace GuiBuddy.Infrastructure.AI;
 public class GeminiSdkClient : IAIClient
 {
     private readonly ISettingsService _settingsService;
+    private readonly IResponseParser _responseParser;
     private const string ProviderName = "Gemini";
-    private const string ModelName = "gemini-2.5-flash"; // Cost-effective model
+    private const string ModelName = "gemini-2.5-flash";
 
-    public GeminiSdkClient(ISettingsService settingsService)
+    public GeminiSdkClient(ISettingsService settingsService, IResponseParser responseParser)
     {
         _settingsService = settingsService;
+        _responseParser = responseParser;
     }
 
     public async Task<AIResponse> SendAsync(AIRequest request)
@@ -30,14 +30,11 @@ public class GeminiSdkClient : IAIClient
 
         try
         {
-            // Google.GenAI SDKクライアントの初期化
             var client = new Client(apiKey: apiKey);
             
-            // プロンプトの準備
-            // ChatService側ですでに整形済みのプロンプトがUserMessageに入っている前提
+            // プロンプトはChatService側で既に構築済み
             string promptToSend = request.UserMessage;
 
-            // リクエスト送信
             var response = await client.Models.GenerateContentAsync(
                 ModelName, 
                 promptToSend
@@ -54,12 +51,12 @@ public class GeminiSdkClient : IAIClient
                 }
             }
             
-            return new AIResponse(responseText);
+            // パーサーを使用して構造化レスポンスを返す
+            return _responseParser.Parse(responseText);
         }
         catch (Exception ex)
         {
             return new AIResponse($"Geminiとの通信中にエラーが発生しました: {ex.Message}");
         }
     }
-    // BuildPrompt, SummarizeUiTree, SummarizeNodeRecursive removed
 }

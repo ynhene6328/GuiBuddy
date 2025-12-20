@@ -37,7 +37,8 @@ public partial class App : Application
         services.AddSingleton<IWindowService, WindowService>();
         services.AddSingleton<IUIMapService, UIMapService>();
         services.AddSingleton<IOverlayService, OverlayService>();
-        services.AddSingleton<IPromptService, PromptService>(); // Added
+        services.AddSingleton<IPromptService, PromptService>();
+        services.AddSingleton<IResponseParser, ResponseParser>();
         services.AddSingleton<ISettingsService, GuiBuddy.Infrastructure.Services.SettingsService>();
 
         // Chat
