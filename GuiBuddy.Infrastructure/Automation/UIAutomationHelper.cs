@@ -33,13 +33,22 @@ public class UIAutomationHelper
         cacheRequest.Add(AutomationElement.BoundingRectangleProperty);
         cacheRequest.Add(AutomationElement.IsOffscreenProperty);
         cacheRequest.Add(AutomationElement.RuntimeIdProperty);
+        
+        // Pattern Availability Properties
+        cacheRequest.Add(AutomationElement.IsInvokePatternAvailableProperty);
+        cacheRequest.Add(AutomationElement.IsSelectionItemPatternAvailableProperty);
+        cacheRequest.Add(AutomationElement.IsTogglePatternAvailableProperty);
+        cacheRequest.Add(AutomationElement.IsValuePatternAvailableProperty);
+        cacheRequest.Add(AutomationElement.IsExpandCollapsePatternAvailableProperty);
+        cacheRequest.Add(AutomationElement.IsScrollPatternAvailableProperty);
+        cacheRequest.Add(AutomationElement.IsScrollItemPatternAvailableProperty);
+
         cacheRequest.TreeScope = TreeScope.Element | TreeScope.Subtree;
 
         // キャッシュを有効にして要素を取得
         using (cacheRequest.Activate())
         {
             // ルート要素の情報を更新（キャッシュに乗せる）
-            // 注意: 既に取得済みのAutomationElementに対してBuildUpdatedCacheを呼ぶ
             try
             {
                 var updatedRoot = root.GetUpdatedCache(cacheRequest);
@@ -55,13 +64,10 @@ public class UIAutomationHelper
     private UIElementInfo BuildTreeRecursive(AutomationElement element, int depth = 0)
     {
         if (element == null) return new UIElementInfo { Name = "Error: Element is null" };
-        // if (depth > 20) return new UIElementInfo { Name = "Error: Max depth reached" };
 
         string controlType = "Unknown";
         try
         {
-            // LocalizedControlTypeではなく、ProgrammaticName ("ControlType.Button"など) を使用する
-            // これにより言語に依存せず判定が可能になる
             var progName = element.Cached.ControlType?.ProgrammaticName;
             if (!string.IsNullOrEmpty(progName) && progName.StartsWith("ControlType."))
             {
@@ -74,14 +80,12 @@ public class UIAutomationHelper
         }
         catch { }
 
-        // RuntimeIdの文字列化
         string runtimeIdStr = string.Empty;
         try
         {
-            int[] runtimeId = element.GetRuntimeId(); // Cachedから取るべきだが、GetRuntimeId()メソッドは内部で適切に処理するか確認が必要。通常はCachedプロパティではないので直接呼ぶか、あるいはCachedプロパティ辞書から取る。
-            // しかしCacheRequestにRuntimeIdPropertyを入れても、element.Cached.RuntimeIdのようなプロパティは公開されていないため、GetRuntimeId()がキャッシュを使うかは実装依存。
-            // .NET FrameworkのUI AutomationではGetRuntimeId()はキャッシュを使わない場合があるが、ここでは例外処理でガードしつつ呼ぶ。
-            // あるいは element.GetCachedPropertyValue(AutomationElement.RuntimeIdProperty) を使うのが正解。
+            // Note: GetRuntimeId() behavior regarding cache is implementation specific,
+            // but usually safest to verify if it throws or works.
+            int[] runtimeId = element.GetRuntimeId();
             if (runtimeId != null)
             {
                  runtimeIdStr = string.Join(",", runtimeId);
@@ -89,13 +93,13 @@ public class UIAutomationHelper
         }
         catch 
         {
-            // Try explicit property retrieval from cache
-            try
-            {
+             // Fallback
+             try
+             {
                  var rid = element.GetCachedPropertyValue(AutomationElement.RuntimeIdProperty) as int[];
                  if (rid != null) runtimeIdStr = string.Join(",", rid);
-            }
-            catch {}
+             }
+             catch {}
         }
 
         var info = new UIElementInfo
@@ -107,7 +111,16 @@ public class UIAutomationHelper
             ClassName = element.Cached.ClassName ?? string.Empty,
             Bounds = element.Cached.BoundingRectangle,
             IsOffscreen = element.Cached.IsOffscreen,
-            RuntimeId = runtimeIdStr
+            RuntimeId = runtimeIdStr,
+            
+            // Populate Pattern Flags from Cache
+            IsInvokePatternAvailable = (bool)element.GetCachedPropertyValue(AutomationElement.IsInvokePatternAvailableProperty),
+            IsSelectionItemPatternAvailable = (bool)element.GetCachedPropertyValue(AutomationElement.IsSelectionItemPatternAvailableProperty),
+            IsTogglePatternAvailable = (bool)element.GetCachedPropertyValue(AutomationElement.IsTogglePatternAvailableProperty),
+            IsValuePatternAvailable = (bool)element.GetCachedPropertyValue(AutomationElement.IsValuePatternAvailableProperty),
+            IsExpandCollapsePatternAvailable = (bool)element.GetCachedPropertyValue(AutomationElement.IsExpandCollapsePatternAvailableProperty),
+            IsScrollPatternAvailable = (bool)element.GetCachedPropertyValue(AutomationElement.IsScrollPatternAvailableProperty),
+            IsScrollItemPatternAvailable = (bool)element.GetCachedPropertyValue(AutomationElement.IsScrollItemPatternAvailableProperty)
         };
 
         // ControlViewWalkerを使用して子要素を走査
