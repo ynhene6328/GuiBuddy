@@ -323,3 +323,4 @@ public class ChatViewModel : INotifyPropertyChanged
         return false;
     }
 }
+

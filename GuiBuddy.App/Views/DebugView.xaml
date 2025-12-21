@@ -1,0 +1,117 @@
+<UserControl x:Class="GuiBuddy.App.Views.DebugView"    
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:GuiBuddy.App"
+        xmlns:views="clr-namespace:GuiBuddy.App.Views"
+        mc:Ignorable="d">
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+    </UserControl.Resources>
+
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>   <!-- Main Content -->
+            <RowDefinition Height="Auto"/> <!-- Settings Button -->
+        </Grid.RowDefinitions>
+
+        <!-- Main Content (Debug + Chat) -->
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/> <!-- Debug Panel (Collapsible) -->
+                <ColumnDefinition Width="*"/>    <!-- Chat View -->
+            </Grid.ColumnDefinitions>
+
+            <Border BorderBrush="Gray" BorderThickness="1" Margin="0,0,10,0" Padding="10"
+                    Visibility="{Binding IsDebugVisible.Value, Converter={StaticResource BoolToVis}}">
+                <DockPanel>
+                    <!-- Header: Status & Toggle -->
+                    <Grid DockPanel.Dock="Top" Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="{Binding StatusMessage.Value}" FontSize="14" VerticalAlignment="Center"/>
+                        <Button Grid.Column="1" Content="Debug View" Command="{Binding ToggleDebugCommand}" Width="100" Padding="5,2"/>
+                    </Grid>
+
+                    <!-- Debug Footer Buttons -->
+                    <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Margin="0,10,0,0"
+                                Visibility="{Binding IsDebugVisible.Value, Converter={StaticResource BoolToVis}}">
+                        <Button Content="Refresh Windows" Command="{Binding RefreshCommand}" Width="120" Height="30"/>
+                        <Button Content="Get Structure" Command="{Binding GetStructureCommand}" Width="120" Height="30" Margin="10,0,0,0"/>
+                        <Button Content="Generate UI Map" Command="{Binding GenerateMapCommand}" Width="120" Height="30" Margin="10,0,0,0"/>
+                        <Button Content="Show Overlay" Command="{Binding ShowOverlayCommand}" Width="120" Height="30" Margin="10,0,0,0"/>
+                        <Button Content="Close Overlay" Command="{Binding CloseOverlayCommand}" Width="120" Height="30" Margin="10,0,0,0"/>
+                    </StackPanel>
+    
+                    <!-- Debug Panel Group -->
+                    <Grid Grid.Column="0"
+                        Width="600" Margin="0,0,10,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="1*"/> <!-- Window List -->
+                            <ColumnDefinition Width="5"/>
+                            <ColumnDefinition Width="1*"/> <!-- Tree/JSON -->
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Debug Window List -->
+                        <ListBox Grid.Column="0" ItemsSource="{Binding Windows}" SelectedItem="{Binding SelectedWindow.Value}">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="{Binding Handle}" Width="80" FontWeight="Bold"/>
+                                        <TextBlock Text="{Binding Title}" Margin="10,0,0,0"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+
+                        <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Center"/>
+
+                        <!-- Debug Tree & JSON -->
+                        <TabControl Grid.Column="2">
+                            <TabItem Header="Tree Structure">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="*"/>
+                                    </Grid.RowDefinitions>
+                                    <Button Grid.Row="0" Content="Scroll to Selected (Debug)" Command="{Binding DebugScrollCommand}" Margin="0,0,0,5"/>
+                                    <TreeView Grid.Row="1" ItemsSource="{Binding Structure}" SelectedItemChanged="TreeView_SelectedItemChanged">
+                                        <TreeView.ItemTemplate>
+                                            <HierarchicalDataTemplate ItemsSource="{Binding Children}">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Text="[" Foreground="Blue"/>
+                                                    <TextBlock Text="{Binding ControlType}" Foreground="Blue"/>
+                                                    <TextBlock Text="] " Foreground="Blue"/>
+                                                    <TextBlock Text="{Binding Name}" FontWeight="Bold"/>
+                                                    <TextBlock Text=" (#" Foreground="Gray"/>
+                                                    <TextBlock Text="{Binding AutomationId}" Foreground="Gray"/>
+                                                    <TextBlock Text=")" Foreground="Gray"/>
+                                                    <TextBlock Text=" "/>
+                                                    <TextBlock Text="{Binding Bounds}" FontSize="10" VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                            </HierarchicalDataTemplate>
+                                        </TreeView.ItemTemplate>
+                                    </TreeView>
+                                </Grid>
+                            </TabItem>
+                            <TabItem Header="Internal Map (JSON)">
+                                <TextBox Text="{Binding UIMapJson.Value}" IsReadOnly="True" 
+                                        VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
+                                        FontFamily="Consolas"/>
+                            </TabItem>
+                            <TabItem Header="AI Map (JSON)">
+                                <TextBox Text="{Binding AiMapJson.Value}" IsReadOnly="True" 
+                                        VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
+                                        FontFamily="Consolas"/>
+                            </TabItem>
+                        </TabControl>
+                    </Grid>
+                </DockPanel>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>
+

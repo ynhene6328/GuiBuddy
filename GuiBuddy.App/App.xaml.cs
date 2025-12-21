@@ -50,6 +50,7 @@ public partial class App : Application
         // App
         services.AddSingleton<MainWindowViewModel>();
         services.AddSingleton<ChatViewModel>(); // Dependencies (IChatService, IWindowService, IOverlayService) will be resolved auto-magically by container
+        services.AddSingleton<DebugViewModel>();
         services.AddTransient<MainWindow>();
     }
 }
