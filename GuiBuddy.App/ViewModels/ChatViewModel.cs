@@ -1,6 +1,12 @@
 using System;
 using System.Collections.ObjectModel;
 using System.Reactive.Linq;
+using System.Reactive;
+using System.Reactive.Subjects;
+using System.Reactive.Disposables;
+using System.Text.Json;
+using System.Runtime.InteropServices;
+using System.Windows;
 using System.Threading.Tasks;
 using GuiBuddy.Core.Models;
 using GuiBuddy.Core.Services;
@@ -22,6 +28,12 @@ public class ChatViewModel : INotifyPropertyChanged
     private readonly IWindowService _windowService;
     private readonly IOverlayService _overlayService;
     private readonly IUIMapService _uiMapService;
+    // Input monitoring
+    private readonly Subject<Unit> _inputDetectedSubject = new();
+    private IDisposable? _inputPollingSubscription;
+    private IDisposable? _inputDetectedSubscription;
+    private string? _lastContextSnapshot;
+    private uint _lastInputTick = 0;
 
     // Window Selection
     public ObservableCollection<WindowInfo> AvailableWindows { get; } = new();
@@ -91,6 +103,14 @@ public class ChatViewModel : INotifyPropertyChanged
         
         // Initial Subject Value
         _inputTextSubject.OnNext("");
+        // Subscribe to SelectedTargetWindow changes to start/stop input monitoring
+        SelectedTargetWindow
+            .Subscribe(w => OnSelectedTargetWindowChanged(w));
+
+        // Debounced handling of detected input
+        _inputDetectedSubscription = _inputDetectedSubject
+            .Throttle(TimeSpan.FromMilliseconds(500))
+            .Subscribe(async _ => await HandleDebouncedInputAsync());
     }
 
     private void LoadWindows()
@@ -191,6 +211,9 @@ public class ChatViewModel : INotifyPropertyChanged
         Messages.Add(new ChatMessage("GuiBuddy-AI", response.ResponseText));
 
         // ハイライトとスクロール処理
+        ProcessHighlightAndScroll(response);
+    }
+    private void ProcessHighlightAndScroll(AIResponse response){
         if (response.TargetElementIds != null && response.TargetElementIds.Count > 0 && CurrentContext != null)
         {
             var targetIds = response.TargetElementIds;
@@ -296,6 +319,140 @@ public class ChatViewModel : INotifyPropertyChanged
                 }
             }
         }
+    }
+
+    private void OnSelectedTargetWindowChanged(WindowInfo? window)
+    {
+        // Stop existing polling
+        _inputPollingSubscription?.Dispose();
+        _inputPollingSubscription = null;
+
+        if (window == null) return;
+
+        // Initialize last input tick to current value to avoid immediate trigger
+        _lastInputTick = GetLastInputTick();
+
+        // Poll system last-input and foreground window periodically
+        _inputPollingSubscription = System.Reactive.Linq.Observable
+            .Interval(TimeSpan.FromMilliseconds(500))
+            .Subscribe(_ =>
+            {
+                try
+                {
+                    var last = GetLastInputTick();
+                    var fg = _windowService.GetForegroundWindow();
+                    if (last != _lastInputTick && fg != null && window != null && fg.Handle == window.Handle)
+                    {
+                        _lastInputTick = last;
+                        _inputDetectedSubject.OnNext(Unit.Default);
+                    }
+                    else
+                    {
+                        _lastInputTick = last;
+                    }
+                }
+                catch
+                {
+                    // swallow polling exceptions
+                }
+            });
+    }
+
+    private async Task HandleDebouncedInputAsync()
+    {
+        var target = SelectedTargetWindow.Value;
+        if (target == null) return;
+
+        try
+        {
+            var root = _windowService.GetWindowStructure(target.Handle);
+            if (root == null) return;
+
+            var map = _uiMapService.GenerateMap(root);
+
+            // Create a bounds-free snapshot for comparison
+            var aiNode = _uiMapService.ConvertToAiNode(map.Root);
+            var json = JsonSerializer.Serialize(aiNode);
+
+            if (json != _lastContextSnapshot)
+            {
+                _lastContextSnapshot = json;
+
+                // Update CurrentContext on UI thread if available
+                if (Application.Current?.Dispatcher != null)
+                {
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        CurrentContext = map.Root;
+                        _overlayService.Update(CurrentContext);
+                        Messages.Add(new ChatMessage("GuiBuddy-System", $"UI変化を検出しました: {target.Title}"));
+                    });
+                }
+                else
+                {
+                    CurrentContext = map.Root;
+                    _overlayService.Update(CurrentContext);
+                    Messages.Add(new ChatMessage("GuiBuddy-System", $"UI変化を検出しました: {target.Title}"));
+                }
+
+                // Notify AI about the change (fire-and-forget but await to propagate result to UI messages)
+                try
+                {
+                    var aiResponse = await _chatService.SendMessageAsync($"ユーザーの操作によってUI要素が変化しました、最終目的が達成されているか確認し、達成されていなければ次の操作を教えてください", CurrentContext);
+                    if (aiResponse != null)
+                    {
+                        if (Application.Current?.Dispatcher != null)
+                        {
+                            Application.Current.Dispatcher.Invoke(() =>
+                            {
+                                Messages.Add(new ChatMessage("GuiBuddy-AI", aiResponse.ResponseText));
+                                // ハイライトとスクロール処理
+                                ProcessHighlightAndScroll(aiResponse);
+                            });
+                        }
+                        else
+                        {
+                            Messages.Add(new ChatMessage("GuiBuddy-AI", aiResponse.ResponseText));
+                            // ハイライトとスクロール処理
+                            ProcessHighlightAndScroll(aiResponse);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Messages.Add(new ChatMessage("GuiBuddy-System", $"Warning: AI notify failed: {ex.Message}"));
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Messages.Add(new ChatMessage("GuiBuddy-System", $"Warning: Input handling failed: {ex.Message}"));
+        }
+    }
+
+    // P/Invoke for GetLastInputInfo
+    [StructLayout(LayoutKind.Sequential)]
+    private struct LASTINPUTINFO
+    {
+        public uint cbSize;
+        public uint dwTime;
+    }
+
+    [DllImport("user32.dll")]
+    private static extern bool GetLastInputInfo(ref LASTINPUTINFO plii);
+
+    private static uint GetLastInputTick()
+    {
+        try
+        {
+            var lii = new LASTINPUTINFO { cbSize = (uint)Marshal.SizeOf<LASTINPUTINFO>(), dwTime = 0 };
+            if (GetLastInputInfo(ref lii))
+            {
+                return lii.dwTime;
+            }
+        }
+        catch { }
+        return 0;
     }
 
     private UiNode? FindNodeById(UiNode root, int id)
