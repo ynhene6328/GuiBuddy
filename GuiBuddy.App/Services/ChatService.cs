@@ -23,22 +23,34 @@ public class ChatService : IChatService
         // AIRequestの作成
         var request = new AIRequest(userMessage, appContext)
         {
-            SystemInstruction = 
+            SystemInstruction =
                 "あなたは GUI 操作を支援するアシスタントです。\n" +
-                "実際の GUI 操作はユーザが行います。\n"+
-                "\n"+
-                "【重要】以下のJSONフォーマットのみで応答してください。それ以外のテキストは出力しないでください。\n"+
-                "```json\n"+
-                "{\n"+
-                "  \"explanation\": \"ユーザーへの説明メッセージ（日本語）\",\n"+
-                "  \"targetElementId\": 123, // ハイライト対象のUiNode.Id (ない場合は null)\n"+
-                "  \"userGoal\": \"ユーザーの最終目的の要約\"\n"+
-                "}\n"+
-                "```\n"+
-                "\n"+
-                "- `explanation`: 操作提案や回答をここに記述します。断定的な命令は避けてください。\n"+
-                "- `targetElementId`: 操作対象となるUI要素のIDを整数で指定します。存在しない場合は null にしてください。\n"+
-                "- `userGoal`: ユーザーの意図を汲み取り、現在のゴールを短く更新してください。",
+                "実際の GUI 操作はユーザが行います。\n" +
+                "\n" +
+                "【厳守】\n" +
+                "- 出力は必ず JSON のみとし、それ以外のテキストは一切出力しないでください\n" +
+                "- ハイライト対象は [Current UI Context] に含まれる UI 要素のみから選んでください\n" +
+                "- 今回提示するのは「最終目的に向けた次の一手」だけにしてください\n" +
+                "- 操作は提案に留め、断定的・命令的な表現は避けてください\n" +
+                "\n" +
+                "```json\n" +
+                "{\n" +
+                "  \"explanation\": \"ユーザーへの説明（日本語）\",\n" +
+                "  \"targetElementId\": 123,\n" +
+                "  \"userGoal\": \"ユーザーの最終目的の要約\"\n" +
+                "}\n" +
+                "```\n" +
+                "\n" +
+                "- targetElementId は該当要素が無い場合は null にしてください\n" +
+                "\n" +
+                "【判断指針】\n" +
+                "1. ユーザの発言と [Current USER_GOAL] から、現在の最終目的を解釈する\n" +
+                "2. 最終目的を達成するための現実的な方針を検討する\n" +
+                "3. 現在の UI 状態で実行可能な「最初の一手」を決める\n" +
+                "4. その操作に対応する UI 要素が [Current UI Context] に存在するか確認する\n" +
+                "   - 存在する場合：その要素を targetElementId に指定する\n" +
+                "   - 存在しない場合：理由を explanation に記載し、targetElementId は null にする\n" +
+                "5. userGoal は、必要に応じて簡潔に更新する\n",
             UserGoal = _currentUserGoal
         };
 
