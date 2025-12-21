@@ -36,20 +36,14 @@
             <Border Grid.Row="0" Padding="10" Background="#F0F0F0" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1">
                 <StackPanel>
                     <TextBlock Text="Target Window Selection" FontWeight="Bold" Margin="0,0,0,5"/>
-                    <DockPanel>
-                        <Button DockPanel.Dock="Left" 
-                                Command="{Binding RefreshWindowsCommand}" 
-                                Content="&#xE72C;" 
-                                Style="{StaticResource IconButtonStyle}"
-                                ToolTip="Refresh Windows"/>
-                        <ComboBox 
-                                ItemsSource="{Binding AvailableWindows}" 
-                                SelectedItem="{Binding SelectedTargetWindow.Value}"
-                                DisplayMemberPath="Title"
-                                Margin="0,0,5,0"
-                                Padding="4"
-                                SelectionChanged="TargetWindow_SelectionChanged"/>
-                    </DockPanel>
+                    <ComboBox 
+                            ItemsSource="{Binding AvailableWindows}" 
+                            SelectedItem="{Binding SelectedTargetWindow.Value}"
+                            DisplayMemberPath="Title"
+                            Margin="0,0,5,0"
+                            Padding="4"
+                            DropDownOpened="TargetWindow_OnDropDownOpened"
+                            SelectionChanged="TargetWindow_SelectionChanged"/>
                 </StackPanel>
             </Border>
         </DockPanel>
