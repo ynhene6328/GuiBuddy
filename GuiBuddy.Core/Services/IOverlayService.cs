@@ -4,7 +4,7 @@ namespace GuiBuddy.Core.Services;
 
 public interface IOverlayService
 {
-    void Show(UiNode root, bool showAll = true);
+    void Show(UiNode root);
     void Hide();
     void Update(UiNode root);
     void Highlight(int nodeId);

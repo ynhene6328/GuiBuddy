@@ -8,7 +8,7 @@ namespace GuiBuddy.App.Services
     {
         private OverlayWindow? _overlayWindow;
 
-        public void Show(UiNode root, bool showAll = true)
+        public void Show(UiNode root)
         {
             if (_overlayWindow == null)
             {
@@ -16,7 +16,7 @@ namespace GuiBuddy.App.Services
                 _overlayWindow.Closed += (s, e) => _overlayWindow = null;
             }
 
-            _overlayWindow.UpdateData(root, showAll);
+            _overlayWindow.UpdateData(root);
             _overlayWindow.Show();
         }
 
@@ -30,13 +30,7 @@ namespace GuiBuddy.App.Services
         {
             if (_overlayWindow != null)
             {
-                // Update時は現状の表示モードを維持したいが、ここでは簡易的にデフォルト動作(true)または
-                // Window側で保持している状態を維持するオーバーロードが必要かもしれない。
-                // 今回はUpdateDataの引数が増えたので、とりあえずtrueを渡すか、
-                // OverlayWindowに状態取得プロパティを追加するのがベターだが、
-                // とりあえず全表示で更新する。
-                // チャットフローではUpdateは呼ばれない（Show -> Highlight）ので影響は少ない。
-                _overlayWindow.UpdateData(root, true); 
+                _overlayWindow.UpdateData(root); 
             }
         }
 
@@ -76,8 +70,8 @@ namespace GuiBuddy.App.Services
                 Hint = window.Title
             };
 
-            // 全表示オフでShowを呼び出し、ダミーIDをハイライト指定
-            Show(root, showAll: false);
+            // Showを呼び出し、ダミーIDをハイライト指定
+            Show(root);
             Highlight(dummyId);
         }
     }

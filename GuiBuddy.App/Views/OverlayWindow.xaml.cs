@@ -44,28 +44,21 @@ namespace GuiBuddy.App.Views
             this.Height = SystemParameters.VirtualScreenHeight;
         }
 
-        private bool _showAllNodes = true;
-
-
-
-        public void UpdateData(UiNode root, bool showAll)
+        public void UpdateData(UiNode root)
         {
             _rootNode = root;
-            _showAllNodes = showAll; // 全表示フラグを更新
             InvalidateVisual(); // 再描画をリクエスト
         }
 
         public void HighlightNode(int nodeId)
         {
             _highlightedNodeId = nodeId;
-            _showAllNodes = false; // ハイライト時は全表示をオフにする（混在させたい場合はロジック調整）
             InvalidateVisual();
         }
 
         public void ClearHighlight()
         {
             _highlightedNodeId = null;
-            _showAllNodes = false; 
             InvalidateVisual();
         }
 
@@ -109,8 +102,8 @@ namespace GuiBuddy.App.Views
 
             if (_rootNode == null) return;
 
-            // ハイライトIDがなく、かつ全表示モードでもない場合は描画しない
-            if (!_highlightedNodeId.HasValue && !_showAllNodes)
+            // ハイライトIDがない場合は描画しない
+            if (!_highlightedNodeId.HasValue)
             {
                 return;
             }
@@ -140,7 +133,7 @@ namespace GuiBuddy.App.Views
                     shouldDraw = true;
                     pen = _highlightPen;
                 }
-                else if (_showAllNodes && !_highlightedNodeId.HasValue)
+                else if (!_highlightedNodeId.HasValue)
                 {
                     // 全表示モードかつハイライト指定がない場合
                     shouldDraw = true;

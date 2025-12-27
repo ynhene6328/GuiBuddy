@@ -323,7 +323,7 @@ public class ChatViewModel : INotifyPropertyChanged
             // オーバーレイ表示とハイライト
              if (CurrentContext != null)
             {
-                _overlayService.Show(CurrentContext, showAll: false);
+                _overlayService.Show(CurrentContext);
                 foreach (var id in targetIds)
                 {
                     _overlayService.Highlight(id);
