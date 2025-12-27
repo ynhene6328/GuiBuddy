@@ -62,6 +62,13 @@ namespace GuiBuddy.App.Views
             InvalidateVisual();
         }
 
+        public void ClearHighlight()
+        {
+            _highlightedNodeId = null;
+            _showAllNodes = false; 
+            InvalidateVisual();
+        }
+
         protected override void OnSourceInitialized(EventArgs e)
         {
             base.OnSourceInitialized(e);

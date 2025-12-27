@@ -48,6 +48,14 @@ namespace GuiBuddy.App.Services
             }
         }
 
+        public void ClearHighlight()
+        {
+            if (_overlayWindow != null)
+            {
+                _overlayWindow.ClearHighlight();
+            }
+        }
+
         public void HighlightWindow(WindowInfo window)
         {
             // ウィンドウの矩形情報を持つダミーノードを作成

@@ -377,6 +377,7 @@ public class ChatViewModel : INotifyPropertyChanged
             var map = _uiMapService.GenerateMap(root);
 
             CurrentContext = map.Root;
+            _overlayService.ClearHighlight();
             _overlayService.Update(CurrentContext);
             Messages.Add(new ChatMessage("GuiBuddy-System", $"UI変化を検出しました: {target.Title}"));
 

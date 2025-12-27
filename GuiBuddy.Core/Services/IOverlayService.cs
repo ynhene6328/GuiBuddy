@@ -8,5 +8,6 @@ public interface IOverlayService
     void Hide();
     void Update(UiNode root);
     void Highlight(int nodeId);
+    void ClearHighlight();
     void HighlightWindow(WindowInfo window);
 }
