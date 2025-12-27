@@ -11,6 +11,7 @@ public class ChatService : IChatService
     private readonly IAIClientFactory _aiClientFactory;
     private readonly IPromptService _promptService;
     private string? _currentUserGoal;
+    private string? _lastContextSummary;
 
     public ChatService(IAIClientFactory aiClientFactory, IPromptService promptService)
     {
@@ -26,6 +27,7 @@ public class ChatService : IChatService
             SystemInstruction =
                 "あなたは GUI 操作を支援するアシスタントです。\n" +
                 "実際の GUI 操作はユーザが行います。\n" +
+                "この応答は、同一の最終目的に対する連続した対話の1ステップです。\n" +
                 "\n" +
                 "【厳守】\n" +
                 "- 出力は必ず JSON のみとし、それ以外のテキストは一切出力しないでください\n" +
@@ -37,16 +39,23 @@ public class ChatService : IChatService
                 "{\n" +
                 "  \"explanation\": \"ユーザーへの説明（日本語）\",\n" +
                 "  \"targetElementId\": 123,\n" +
-                "  \"userGoal\": \"ユーザーの最終目的の要約\"\n" +
+                "  \"userGoal\": \"ユーザーの最終目的の要約\",\n" +
+                "  \"contextSummary\": \"これまでの操作提案と結果をまとめた状態ログ\"\n" +
                 "}\n" +
                 "```\n" +
                 "\n" +
-                "- targetElementId は該当要素が無い場合は null にしてください\n" +
+                "【contextSummary の扱い】\n" +
+                "- contextSummary は、最終目的に対する進捗を表す状態ログです\n" +
+                "- [PREVIOUS CONTEXT / SUMMARY] が与えられている場合は、その内容を前提として引き継ぎ、\n" +
+                "  今回の提案や UI 状態の変化のみを簡潔に追記・更新してください\n" +
+                "- 冗長な説明や推測は不要です\n" +
+                "\n" +
+                "- targetElementId は該当する UI 要素が無い場合は null にしてください\n" +
                 "\n" +
                 "【判断指針】\n" +
                 "1. ユーザの発言と [Current USER_GOAL] から、現在の最終目的を解釈する\n" +
                 "2. 最終目的を達成するための現実的な方針を検討する\n" +
-                "3. 現在の UI 状態で実行可能な「最初の一手」を決める\n" +
+                "3. 現在の UI 状態で実行可能な「次の一手」を1つ決める\n" +
                 "4. その操作に対応する UI 要素が [Current UI Context] に存在するか確認する\n" +
                 "   - 存在する場合：その要素を targetElementId に指定する\n" +
                 "   - 存在しない場合：理由を explanation に記載し、targetElementId は null にする\n" +
@@ -55,7 +64,7 @@ public class ChatService : IChatService
         };
 
         // プロンプト構築
-        string fullPrompt = _promptService.BuildFullPrompt(request);
+        string fullPrompt = _promptService.BuildFullPrompt(request, _lastContextSummary);
 
         // AIクライアントへの送信用リクエストを作成
         var sendRequest = new AIRequest(fullPrompt, null);
@@ -70,6 +79,12 @@ public class ChatService : IChatService
         if (!string.IsNullOrWhiteSpace(response.UserGoal))
         {
             _currentUserGoal = response.UserGoal;
+        }
+
+        // ContextSummaryの状態更新
+        if (!string.IsNullOrWhiteSpace(response.ContextSummary))
+        {
+            _lastContextSummary = response.ContextSummary;
         }
 
         return response;

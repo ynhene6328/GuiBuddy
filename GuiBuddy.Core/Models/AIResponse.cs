@@ -8,6 +8,7 @@ public class AIResponse
     public IReadOnlyList<int> TargetElementIds { get; init; } = Array.Empty<int>();
     public double? Confidence { get; init; }
     public string? UserGoal { get; init; }
+    public string? ContextSummary { get; init; }
 
     public AIContent? Content { get; init; }
 

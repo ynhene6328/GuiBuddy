@@ -31,7 +31,8 @@ public class ResponseParser : IResponseParser
                 {
                     Content = content,
                     TargetElementIds = targetIds,
-                    UserGoal = content.UserGoal
+                    UserGoal = content.UserGoal,
+                    ContextSummary = content.ContextSummary
                 };
             }
         }

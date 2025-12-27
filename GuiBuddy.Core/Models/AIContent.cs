@@ -24,4 +24,10 @@ public class AIContent
     /// </summary>
     [JsonPropertyName("userGoal")]
     public string UserGoal { get; set; } = string.Empty;
+
+    /// <summary>
+    /// これまでの会話の要点と文脈の要約
+    /// </summary>
+    [JsonPropertyName("contextSummary")]
+    public string ContextSummary { get; set; } = string.Empty;
 }

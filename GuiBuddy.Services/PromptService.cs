@@ -9,7 +9,7 @@ namespace GuiBuddy.Services;
 /// </summary>
 public class PromptService : IPromptService
 {
-    public string BuildFullPrompt(AIRequest request)
+    public string BuildFullPrompt(AIRequest request, string? previousSummary = null)
     {
         var sb = new StringBuilder();
 
@@ -18,6 +18,15 @@ public class PromptService : IPromptService
         {
             sb.AppendLine("[System Instruction]");
             sb.AppendLine(request.SystemInstruction);
+            sb.AppendLine();
+        }
+
+        // Previous Context Summary
+        if (!string.IsNullOrEmpty(previousSummary))
+        {
+            sb.AppendLine("[PREVIOUS CONTEXT / SUMMARY]");
+            sb.AppendLine("以下の情報は、前回のやり取りまでの要約です。これも踏まえて現在の状況を判断してください。");
+            sb.AppendLine(previousSummary);
             sb.AppendLine();
         }
 
