@@ -4,79 +4,304 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:local="clr-namespace:GuiBuddy.App.Views"
-             mc:Ignorable="d" 
-             d:DesignHeight="450" d:DesignWidth="300">
+             mc:Ignorable="d"
+             d:DesignHeight="450"
+             d:DesignWidth="300">
+
+    <!-- ================= Resources ================= -->
     <UserControl.Resources>
+
+        <!-- Colors -->
+        <SolidColorBrush x:Key="AccentBrush" Color="#2563EB"/>
+        <SolidColorBrush x:Key="SurfaceBrush" Color="#F9FAFB"/>
+        <SolidColorBrush x:Key="BorderBrushLight" Color="#E5E7EB"/>
+        <SolidColorBrush x:Key="MessageBrush" Color="#F3F4F6"/>
+        <SolidColorBrush x:Key="MutedTextBrush" Color="#6B7280"/>
+
+        <!-- Icon Button -->
         <Style x:Key="IconButtonStyle" TargetType="Button">
             <Setter Property="FontFamily" Value="Segoe Fluent Icons"/>
-            <Setter Property="FontSize" Value="14"/>
-            <Setter Property="Width" Value="30"/>
-            <Setter Property="Height" Value="30"/>
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="Width" Value="32"/>
+            <Setter Property="Height" Value="32"/>
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="VerticalContentAlignment" Value="Center"/>
-            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd"
+                                CornerRadius="6"
+                                Background="{TemplateBinding Background}">
+                            <ContentPresenter
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#EEF2FF"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#E0E7FF"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.5"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
+
+        <!-- ListBox Item -->
+        <Style x:Key="WindowItemStyle" TargetType="ListBoxItem">
+            <Setter Property="Height" Value="36"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                        <Border x:Name="Bd"
+                                Padding="10,0"
+                                Background="{TemplateBinding Background}">
+                            <ContentPresenter VerticalAlignment="Center"/>
+                        </Border>
+
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd"
+                                        Property="Background"
+                                        Value="#EEF2FF"/>
+                            </Trigger>
+
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Bd"
+                                        Property="Background"
+                                        Value="#E0E7FF"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Modern TextBox -->
+        <Style x:Key="ChatInputTextBoxStyle" TargetType="TextBox">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderBrushLight}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="10,6"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="AcceptsReturn" Value="True"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="VerticalScrollBarVisibility" Value="Auto"/>
+
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Border x:Name="Bd"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="8">
+                            <ScrollViewer x:Name="PART_ContentHost"/>
+                        </Border>
+
+                        <ControlTemplate.Triggers>
+                            <!-- Hover -->
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd"
+                                        Property="BorderBrush"
+                                        Value="#CBD5E1"/>
+                            </Trigger>
+
+                            <!-- Focus -->
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="Bd"
+                                        Property="BorderBrush"
+                                        Value="{StaticResource AccentBrush}"/>
+                            </Trigger>
+
+                            <!-- Disabled -->
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="Bd"
+                                        Property="Background"
+                                        Value="#F3F4F6"/>
+                                <Setter Property="Foreground"
+                                        Value="{StaticResource MutedTextBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
         <local:MultiplyConverter x:Key="MultiplyConverter" Factor="0.8"/>
+        <local:ExpandIconConverter x:Key="ExpandIconConverter"/>
     </UserControl.Resources>
-    <Grid>
+
+    <!-- ================= Layout ================= -->
+    <Grid Background="White">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/> <!-- Window Selection Trigger -->
-            <RowDefinition Height="*"/>    <!-- Chat Log -->
-            <RowDefinition Height="Auto"/> <!-- Input Area -->
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- Window Selection Area -->
-        <DockPanel>
-            <!-- Settings Button (Bottom Left) -->
-            <StackPanel DockPanel.Dock="Right" Orientation="Vertical">
-                <Button Command="{Binding OpenSettingsCommand}" 
-                        Content="&#xE713;" 
-                        Style="{StaticResource IconButtonStyle}"
-                        ToolTip="API設定"/>
-            </StackPanel>
-            <Border Grid.Row="0" Padding="10" Background="#F0F0F0" BorderBrush="#DDDDDD" BorderThickness="0,0,0,1">
-                <StackPanel>
-                    <TextBlock Text="Target Window Selection" FontWeight="Bold" Margin="0,0,0,5"/>
-                    <ComboBox 
-                            ItemsSource="{Binding AvailableWindows}" 
-                            SelectedItem="{Binding SelectedTargetWindow.Value}"
-                            DisplayMemberPath="Title"
-                            Margin="0,0,5,0"
-                            Padding="4"
-                            DropDownOpened="TargetWindow_OnDropDownOpened"
-                            SelectionChanged="TargetWindow_SelectionChanged"/>
-                </StackPanel>
-            </Border>
-        </DockPanel>
+        <!-- ===== Target Window Selection ===== -->
+        <Border Grid.Row="0"
+                Margin="8"
+                Padding="10"
+                Background="{StaticResource SurfaceBrush}"
+                BorderBrush="{StaticResource BorderBrushLight}"
+                BorderThickness="1"
+                CornerRadius="12">
 
-        <!-- Chat Log -->
+            <DockPanel>
+
+                <!-- Right Buttons -->
+                <StackPanel DockPanel.Dock="Right"
+                            Orientation="Horizontal">
+
+                    <!-- Expand / Collapse -->
+                    <ToggleButton Margin="4,0,0,0"
+                                Width="32"
+                                Height="32"
+                                Background="Transparent"
+                                BorderThickness="0"
+                                Cursor="Hand"
+                                IsChecked="{Binding IsExpanded.Value, Mode=TwoWay}">
+
+                        <ToggleButton.Template>
+                            <ControlTemplate TargetType="ToggleButton">
+                                <Border x:Name="Bd"
+                                        CornerRadius="6"
+                                        Background="{TemplateBinding Background}">
+                                    <ContentPresenter
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"/>
+                                </Border>
+
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter TargetName="Bd"
+                                                Property="Background"
+                                                Value="#EEF2FF"/>
+                                    </Trigger>
+
+                                    <Trigger Property="IsChecked" Value="True">
+                                        <Setter TargetName="Bd"
+                                                Property="Background"
+                                                Value="#E0E7FF"/>
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </ToggleButton.Template>
+
+                        <TextBlock FontFamily="Segoe Fluent Icons"
+                                FontSize="16"
+                                Text="{Binding IsExpanded.Value,
+                                        Converter={StaticResource ExpandIconConverter}}"/>
+                    </ToggleButton>
+
+                </StackPanel>
+
+                <Border Background="White"
+                        BorderBrush="{StaticResource BorderBrushLight}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        ToolTip="操作対象となるウィンドウを選択してください">
+
+                    <Grid>
+                        <!-- Collapsed (Selected only) -->
+                        <Border Height="36"
+                                Padding="10,0"
+                                VerticalAlignment="Center">
+
+                            <Border.Style>
+                                <Style TargetType="Border">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsExpanded.Value}" Value="True">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+
+                            <TextBlock Text="{Binding SelectedTargetWindow.Value.Title}"
+                                    VerticalAlignment="Center"
+                                    TextTrimming="CharacterEllipsis"/>
+                        </Border>
+
+                        <!-- Expanded -->
+                        <ListBox ItemsSource="{Binding AvailableWindows}"
+                                SelectedItem="{Binding SelectedTargetWindow.Value}"
+                                ItemContainerStyle="{StaticResource WindowItemStyle}"
+                                Visibility="{Binding IsExpanded.Value,
+                                            Converter={StaticResource BoolToVis}}"
+                                BorderThickness="0">
+
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Title}"
+                                            TextTrimming="CharacterEllipsis"/>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </Grid>
+                </Border>
+
+            </DockPanel>
+        </Border>
+
+        <!-- ===== Chat Log ===== -->
         <ListBox x:Name="ChatListBox"
-                 ItemsSource="{Binding Messages}" 
-                 Grid.Row="1" 
+                 Grid.Row="1"
+                 ItemsSource="{Binding Messages}"
                  BorderThickness="0"
+                 Background="White"
                  ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                  ScrollViewer.CanContentScroll="False"
                  Loaded="ChatListBox_Loaded">
+
             <ListBox.ItemTemplate>
                 <DataTemplate>
-                        <Border x:Name="MessageBorder" CornerRadius="5" Background="#F0F0F0" Padding="8" Margin="5" HorizontalAlignment="Left"
-                            MaxWidth="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=ListBox}, Converter={StaticResource MultiplyConverter}}">
+                    <Border x:Name="MessageBorder"
+                            Background="{StaticResource MessageBrush}"
+                            CornerRadius="10"
+                            Padding="10"
+                            Margin="6"
+                            HorizontalAlignment="Left"
+                            MaxWidth="{Binding ActualWidth,
+                                               RelativeSource={RelativeSource AncestorType=ListBox},
+                                               Converter={StaticResource MultiplyConverter}}">
+
                         <StackPanel>
-                            <TextBlock Text="{Binding Sender}" FontWeight="Bold" Foreground="#0078D7" Margin="0,0,0,4"/>
-                            <TextBlock Text="{Binding Text}" TextWrapping="Wrap"/>
+                            <TextBlock Text="{Binding Sender}"
+                                       FontWeight="SemiBold"
+                                       Foreground="{StaticResource AccentBrush}"
+                                       Margin="0,0,0,4"/>
+                            <TextBlock Text="{Binding Text}"
+                                       TextWrapping="Wrap"/>
                         </StackPanel>
                     </Border>
+
                     <DataTemplate.Triggers>
                         <DataTrigger Binding="{Binding IsUserMessage}" Value="True">
-                            <Setter TargetName="MessageBorder" Property="HorizontalAlignment" Value="Right"/>
+                            <Setter TargetName="MessageBorder"
+                                    Property="HorizontalAlignment"
+                                    Value="Right"/>
                         </DataTrigger>
                     </DataTemplate.Triggers>
                 </DataTemplate>
             </ListBox.ItemTemplate>
+
             <ListBox.ItemContainerStyle>
                 <Style TargetType="ListBoxItem">
                     <Setter Property="Background" Value="Transparent"/>
+                    <Setter Property="Padding" Value="0"/>
                     <Setter Property="Template">
                         <Setter.Value>
                             <ControlTemplate TargetType="ListBoxItem">
@@ -88,20 +313,32 @@
             </ListBox.ItemContainerStyle>
         </ListBox>
 
-        <!-- Input Area -->
-        <DockPanel Grid.Row="2" Margin="5">
-            <Button Content="&#xE724;" 
-                    DockPanel.Dock="Right" 
-                    Command="{Binding SendCommand}" 
-                    Style="{StaticResource IconButtonStyle}"
-                    Margin="5,0,0,0" 
-                    FontSize="18" 
-                    ToolTip="送信 (Shift+Enter)"/>
-            <TextBox Text="{Binding InputText, UpdateSourceTrigger=PropertyChanged}" 
-                     Height="60" 
-                     AcceptsReturn="True" TextWrapping="Wrap"
-                     VerticalScrollBarVisibility="Auto"
-                     PreviewKeyDown="InputTextBox_PreviewKeyDown"/>
-        </DockPanel>
+        <!-- ===== Input Area ===== -->
+        <Border Grid.Row="2"
+                Padding="8"
+                BorderBrush="{StaticResource BorderBrushLight}"
+                BorderThickness="0,1,0,0">
+
+            <DockPanel>
+                <Button DockPanel.Dock="Right"
+                        Content="&#xE724;"
+                        Command="{Binding SendCommand}"
+                        Style="{StaticResource IconButtonStyle}"
+                        ToolTip="送信 (Shift+Enter)"
+                        Margin="6,0,0,0"/>
+
+                <Button DockPanel.Dock="Left"
+                        Content="&#xE713;"
+                        Command="{Binding OpenSettingsCommand}"
+                        Style="{StaticResource IconButtonStyle}"
+                        ToolTip="設定"
+                        Margin="0,0,6,0"/>
+
+                <TextBox Text="{Binding InputText, UpdateSourceTrigger=PropertyChanged}"
+                        Style="{StaticResource ChatInputTextBoxStyle}"
+                        Height="60"
+                        PreviewKeyDown="InputTextBox_PreviewKeyDown"/>
+            </DockPanel>
+        </Border>
     </Grid>
 </UserControl>

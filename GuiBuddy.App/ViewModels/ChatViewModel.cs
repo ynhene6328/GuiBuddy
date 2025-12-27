@@ -25,6 +25,7 @@ public class ChatViewModel : INotifyPropertyChanged
 
     // Window Selection
     public ObservableCollection<WindowInfo> AvailableWindows { get; } = new();
+    public ReactivePropertySlim<bool> IsExpanded { get; } = new(false);
     
     // Use ReactiveProperty for selection to handle notifications and logic easily
     public ReactiveProperty<WindowInfo?> SelectedTargetWindow { get; } = new();
