@@ -23,17 +23,14 @@ public class ChatViewModel : INotifyPropertyChanged
     public event PropertyChangedEventHandler? PropertyChanged;
     protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)
         => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    private const bool IsMonitoringFeatureEnabled = true;
 
     private readonly IChatService _chatService;
     private readonly IWindowService _windowService;
     private readonly IOverlayService _overlayService;
     private readonly IUIMapService _uiMapService;
-    // Input monitoring
-    private readonly Subject<Unit> _inputDetectedSubject = new();
-    private IDisposable? _inputPollingSubscription;
-    private IDisposable? _inputDetectedSubscription;
+    private readonly IUserActivityMonitor _userActivityMonitor;
     private string? _lastContextSnapshot;
-    private uint _lastInputTick = 0;
 
     // Window Selection
     public ObservableCollection<WindowInfo> AvailableWindows { get; } = new();
@@ -71,12 +68,13 @@ public class ChatViewModel : INotifyPropertyChanged
 
     public UiNode? CurrentContext { get; set; } // Set by parent ViewModel
 
-    public ChatViewModel(IChatService chatService, IWindowService windowService, IOverlayService overlayService, IUIMapService uiMapService)
+    public ChatViewModel(IChatService chatService, IWindowService windowService, IOverlayService overlayService, IUIMapService uiMapService, IUserActivityMonitor userActivityMonitor)
     {
         _chatService = chatService;
         _windowService = windowService;
         _overlayService = overlayService;
         _uiMapService = uiMapService;
+        _userActivityMonitor = userActivityMonitor;
 
         // Window Highlight Logic
         SelectedTargetWindow
@@ -104,14 +102,32 @@ public class ChatViewModel : INotifyPropertyChanged
         
         // Initial Subject Value
         _inputTextSubject.OnNext("");
-        // Subscribe to SelectedTargetWindow changes to start/stop input monitoring
-        SelectedTargetWindow
-            .Subscribe(w => OnSelectedTargetWindowChanged(w));
 
-        // Debounced handling of detected input
-        _inputDetectedSubscription = _inputDetectedSubject
-            .Throttle(TimeSpan.FromMilliseconds(500))
-            .Subscribe(async _ => await HandleDebouncedInputAsync());
+        // Monitor activity
+        _userActivityMonitor.InputDetected += OnUserActivityDetected;
+        
+        // ウィンドウ切り替えに応じて監視を切り替える
+        SelectedTargetWindow
+            .Subscribe(w => 
+            {
+                if (w != null)
+                {
+                    // 監視を停止（手動制御が前提なら、ここでは停止するだけでいいかもしれないが、
+                    // 前回の実装ではSelectされたらポーリング開始していたため、それに倣うか、
+                    // あるいは「UserGoalが出たら開始」という仕様を遵守するか。
+                    // ユーザーの手動実装は「Selectされたらポーリング開始」だった。
+                    // しかし過剰反応を防ぐには「AI指示後のみ」が良い。
+                    // ここでは一旦停止し、StartUIMonitoringで再開するフローにする。
+                    StopUIMonitoring();
+                }
+                else
+                {
+                    StopUIMonitoring();
+                }
+            });
+
+        IsExpanded.Where(expanded => expanded == true)
+            .Subscribe(_ => LoadWindows());
     }
 
     private void LoadWindows()
@@ -163,8 +179,6 @@ public class ChatViewModel : INotifyPropertyChanged
                 if (existingWrapper != null)
                 {
                     SelectedTargetWindow.Value = existingWrapper;
-                    // ConfirmWindowはSelectionChangedで呼ばれるが、ここでも明示的に呼ぶか、あるいはSelectionChangedに任せる
-                    // ReactivePropertyの変更通知でUI側のイベントが発火し、ConfirmWindowが走るはず
                     Messages.Add(new ChatMessage("GuiBuddy-System", $"対象ウィンドウを自動切り替えしました: {existingWrapper.Title}"));
                 }
                 else
@@ -202,7 +216,6 @@ public class ChatViewModel : INotifyPropertyChanged
             }
             catch (Exception ex)
             {
-                // エラーログは出すが、送信は続行（古いコンテキストかコンテキストなしで）
                 Messages.Add(new ChatMessage("GuiBuddy-System", $"Warning: Context refresh failed: {ex.Message}"));
             }
         }
@@ -211,9 +224,17 @@ public class ChatViewModel : INotifyPropertyChanged
         
         Messages.Add(new ChatMessage("GuiBuddy-AI", response.ResponseText));
 
+        // UserGoalが返ってきたら監視を開始
+        if (!string.IsNullOrWhiteSpace(response.UserGoal))
+        {
+            StartUIMonitoring();
+            Messages.Add(new ChatMessage("GuiBuddy-System", "[監視開始] 画面変化の自動検知を開始しました。"));
+        }
+
         // ハイライトとスクロール処理
         ProcessHighlightAndScroll(response);
     }
+    
     private void ProcessHighlightAndScroll(AIResponse response){
         if (response.TargetElementIds != null && response.TargetElementIds.Count > 0 && CurrentContext != null)
         {
@@ -301,65 +322,48 @@ public class ChatViewModel : INotifyPropertyChanged
             }
 
             // オーバーレイ表示とハイライト
-            // CurrentContextが最新（または元のまま）
              if (CurrentContext != null)
             {
                 _overlayService.Show(CurrentContext, showAll: false);
                 foreach (var id in targetIds)
                 {
-                    // 再取得した場合、IDが変わっている可能性がある
-                    // UIMapServiceの実装上、IDは生成順なので構造が同じなら同じになる可能性が高いが
-                    // 厳密にはAutomationId等で再検索してIDを特定しなおすべき。
-                    // しかし複雑になるため、今回は「座標更新後も構成が変わらなければIDズレは許容範囲」とするか、
-                    // あるいは「スクロール後はIDが変わる」ことを前提に再検索するロジックを入れるか。
-                    // UIMapService._nodeIdCounter = 1 でリセットされるため、構造が変わらなければIDは同じになるはず。
-                    
-                    // ただし動的なリスト読み込み等で構造が変わる場合はIDがずれる。
-                    // ここでは簡易的に、元のIDでハイライトを試みる。
                     _overlayService.Highlight(id);
                 }
             }
         }
     }
 
-    private void OnSelectedTargetWindowChanged(WindowInfo? window)
+    // --- UI監視制御 ---
+
+    /// <summary>
+    /// UI監視を開始します。
+    /// </summary>
+    private void StartUIMonitoring()
     {
-        // Stop existing polling
-        _inputPollingSubscription?.Dispose();
-        _inputPollingSubscription = null;
-
-        if (window == null) return;
-
-        // Initialize last input tick to current value to avoid immediate trigger
-        _lastInputTick = GetLastInputTick();
-
-        // Poll system last-input and foreground window periodically
-        _inputPollingSubscription = System.Reactive.Linq.Observable
-            .Interval(TimeSpan.FromMilliseconds(500))
-            .Subscribe(_ =>
-            {
-                try
-                {
-                    var last = GetLastInputTick();
-                    var fg = _windowService.GetForegroundWindow();
-                    if (last != _lastInputTick && fg != null && window != null && fg.Handle == window.Handle)
-                    {
-                        _lastInputTick = last;
-                        _inputDetectedSubject.OnNext(Unit.Default);
-                    }
-                    else
-                    {
-                        _lastInputTick = last;
-                    }
-                }
-                catch
-                {
-                    // swallow polling exceptions
-                }
-            });
+        if (!IsMonitoringFeatureEnabled) return;
+        if (SelectedTargetWindow.Value == null) return;
+        _userActivityMonitor.StartMonitoring(SelectedTargetWindow.Value.Handle);
     }
 
-    private async Task HandleDebouncedInputAsync()
+    /// <summary>
+    /// UI監視を停止します。
+    /// </summary>
+    private void StopUIMonitoring()
+    {
+        if (!IsMonitoringFeatureEnabled) return;
+        _userActivityMonitor.StopMonitoring();
+    }
+
+    private async void OnUserActivityDetected(object? sender, EventArgs e)
+    {
+        // UIスレッドで実行
+        await System.Windows.Application.Current.Dispatcher.InvokeAsync(async () =>
+        {
+             await HandleInputAsync();
+        });
+    }
+
+    private async Task HandleInputAsync()
     {
         var target = SelectedTargetWindow.Value;
         if (target == null) return;
@@ -379,44 +383,24 @@ public class ChatViewModel : INotifyPropertyChanged
             {
                 _lastContextSnapshot = json;
 
-                // Update CurrentContext on UI thread if available
-                if (Application.Current?.Dispatcher != null)
-                {
-                    Application.Current.Dispatcher.Invoke(() =>
-                    {
-                        CurrentContext = map.Root;
-                        _overlayService.Update(CurrentContext);
-                        Messages.Add(new ChatMessage("GuiBuddy-System", $"UI変化を検出しました: {target.Title}"));
-                    });
-                }
-                else
-                {
-                    CurrentContext = map.Root;
-                    _overlayService.Update(CurrentContext);
-                    Messages.Add(new ChatMessage("GuiBuddy-System", $"UI変化を検出しました: {target.Title}"));
-                }
+                CurrentContext = map.Root;
+                _overlayService.Update(CurrentContext);
+                Messages.Add(new ChatMessage("GuiBuddy-System", $"UI変化を検出しました: {target.Title}"));
 
-                // Notify AI about the change (fire-and-forget but await to propagate result to UI messages)
+                // Notify AI about the change
                 try
                 {
+                    // 監視を一旦停止（連続反応を防ぐため、またはAIが次の指示を出すまで待機）
+                    // StopUIMonitoring(); // ※必要に応じて
+
                     var aiResponse = await _chatService.SendMessageAsync($"ユーザーの操作によってUI要素が変化しました、最終目的が達成されているか確認し、達成されていなければ次の操作を教えてください", CurrentContext);
                     if (aiResponse != null)
                     {
-                        if (Application.Current?.Dispatcher != null)
-                        {
-                            Application.Current.Dispatcher.Invoke(() =>
-                            {
-                                Messages.Add(new ChatMessage("GuiBuddy-AI", aiResponse.ResponseText));
-                                // ハイライトとスクロール処理
-                                ProcessHighlightAndScroll(aiResponse);
-                            });
-                        }
-                        else
-                        {
-                            Messages.Add(new ChatMessage("GuiBuddy-AI", aiResponse.ResponseText));
-                            // ハイライトとスクロール処理
-                            ProcessHighlightAndScroll(aiResponse);
-                        }
+                        Messages.Add(new ChatMessage("GuiBuddy-AI", aiResponse.ResponseText));
+                        ProcessHighlightAndScroll(aiResponse);
+                        
+                        // AIから追加の指示があれば監視継続、なければ（ゴールなら）停止等のロジックも検討可能だが、
+                        // 現状は「UI変化検知 -> AI確認」のループ
                     }
                 }
                 catch (Exception ex)
@@ -429,31 +413,6 @@ public class ChatViewModel : INotifyPropertyChanged
         {
             Messages.Add(new ChatMessage("GuiBuddy-System", $"Warning: Input handling failed: {ex.Message}"));
         }
-    }
-
-    // P/Invoke for GetLastInputInfo
-    [StructLayout(LayoutKind.Sequential)]
-    private struct LASTINPUTINFO
-    {
-        public uint cbSize;
-        public uint dwTime;
-    }
-
-    [DllImport("user32.dll")]
-    private static extern bool GetLastInputInfo(ref LASTINPUTINFO plii);
-
-    private static uint GetLastInputTick()
-    {
-        try
-        {
-            var lii = new LASTINPUTINFO { cbSize = (uint)Marshal.SizeOf<LASTINPUTINFO>(), dwTime = 0 };
-            if (GetLastInputInfo(ref lii))
-            {
-                return lii.dwTime;
-            }
-        }
-        catch { }
-        return 0;
     }
 
     private UiNode? FindNodeById(UiNode root, int id)

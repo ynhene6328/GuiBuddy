@@ -41,6 +41,10 @@ public partial class App : Application
         services.AddSingleton<IResponseParser, ResponseParser>();
         services.AddSingleton<ISettingsService, GuiBuddy.Infrastructure.Services.SettingsService>();
 
+        // UI Event Monitoring
+
+        services.AddSingleton<IUserActivityMonitor, GuiBuddy.Infrastructure.Services.UserActivityMonitor>();
+        
         // AI Client Factory
         services.AddSingleton<IAIClientFactory, GuiBuddy.Infrastructure.AI.AIClientFactory>();
         
