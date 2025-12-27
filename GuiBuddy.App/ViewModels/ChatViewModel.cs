@@ -221,7 +221,7 @@ public class ChatViewModel : INotifyPropertyChanged
 
         AIResponse response = await _chatService.SendMessageAsync(userText, CurrentContext);
         
-        Messages.Add(new ChatMessage("GuiBuddy-AI", response.ResponseText + "\n\n---------------\n\n" + response.ContextSummary));
+        Messages.Add(new ChatMessage("GuiBuddy-AI", response.ResponseText));
 
         // UserGoalが返ってきたら監視を開始
         if (!string.IsNullOrWhiteSpace(response.UserGoal))
@@ -390,7 +390,7 @@ public class ChatViewModel : INotifyPropertyChanged
                 var aiResponse = await _chatService.SendMessageAsync($"ユーザーの操作によってUI要素が変化しました、最終目的が達成されているか確認し、達成されていなければ次の操作を教えてください", CurrentContext);
                 if (aiResponse != null)
                 {
-                    Messages.Add(new ChatMessage("GuiBuddy-AI", aiResponse.ResponseText + "\n\n---------------\n\n" + aiResponse.ContextSummary));
+                    Messages.Add(new ChatMessage("GuiBuddy-AI", aiResponse.ResponseText));
                     ProcessHighlightAndScroll(aiResponse);
                     
                     // AIから追加の指示があれば監視継続、なければ（ゴールなら）停止等のロジックも検討可能だが、
