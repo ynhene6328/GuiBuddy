@@ -30,7 +30,6 @@ public class ChatViewModel : INotifyPropertyChanged
     private readonly IOverlayService _overlayService;
     private readonly IUIMapService _uiMapService;
     private readonly IUserActivityMonitor _userActivityMonitor;
-    private string? _lastContextSnapshot;
 
     // Window Selection
     public ObservableCollection<WindowInfo> AvailableWindows { get; } = new();
@@ -365,6 +364,8 @@ public class ChatViewModel : INotifyPropertyChanged
 
     private async Task HandleInputAsync()
     {
+        if (!IsMonitoringFeatureEnabled) return;
+
         var target = SelectedTargetWindow.Value;
         if (target == null) return;
 
@@ -375,38 +376,29 @@ public class ChatViewModel : INotifyPropertyChanged
 
             var map = _uiMapService.GenerateMap(root);
 
-            // Create a bounds-free snapshot for comparison
-            var aiNode = _uiMapService.ConvertToAiNode(map.Root);
-            var json = JsonSerializer.Serialize(aiNode);
+            CurrentContext = map.Root;
+            _overlayService.Update(CurrentContext);
+            Messages.Add(new ChatMessage("GuiBuddy-System", $"UI変化を検出しました: {target.Title}"));
 
-            if (json != _lastContextSnapshot)
+            // Notify AI about the change
+            try
             {
-                _lastContextSnapshot = json;
+                // 監視を一旦停止（連続反応を防ぐため、またはAIが次の指示を出すまで待機）
+                // StopUIMonitoring(); // ※必要に応じて
 
-                CurrentContext = map.Root;
-                _overlayService.Update(CurrentContext);
-                Messages.Add(new ChatMessage("GuiBuddy-System", $"UI変化を検出しました: {target.Title}"));
-
-                // Notify AI about the change
-                try
+                var aiResponse = await _chatService.SendMessageAsync($"ユーザーの操作によってUI要素が変化しました、最終目的が達成されているか確認し、達成されていなければ次の操作を教えてください", CurrentContext);
+                if (aiResponse != null)
                 {
-                    // 監視を一旦停止（連続反応を防ぐため、またはAIが次の指示を出すまで待機）
-                    // StopUIMonitoring(); // ※必要に応じて
-
-                    var aiResponse = await _chatService.SendMessageAsync($"ユーザーの操作によってUI要素が変化しました、最終目的が達成されているか確認し、達成されていなければ次の操作を教えてください", CurrentContext);
-                    if (aiResponse != null)
-                    {
-                        Messages.Add(new ChatMessage("GuiBuddy-AI", aiResponse.ResponseText));
-                        ProcessHighlightAndScroll(aiResponse);
-                        
-                        // AIから追加の指示があれば監視継続、なければ（ゴールなら）停止等のロジックも検討可能だが、
-                        // 現状は「UI変化検知 -> AI確認」のループ
-                    }
+                    Messages.Add(new ChatMessage("GuiBuddy-AI", aiResponse.ResponseText + "\n\n---------------\n\n" + aiResponse.ContextSummary));
+                    ProcessHighlightAndScroll(aiResponse);
+                    
+                    // AIから追加の指示があれば監視継続、なければ（ゴールなら）停止等のロジックも検討可能だが、
+                    // 現状は「UI変化検知 -> AI確認」のループ
                 }
-                catch (Exception ex)
-                {
-                    Messages.Add(new ChatMessage("GuiBuddy-System", $"Warning: AI notify failed: {ex.Message}"));
-                }
+            }
+            catch (Exception ex)
+            {
+                Messages.Add(new ChatMessage("GuiBuddy-System", $"Warning: AI notify failed: {ex.Message}"));
             }
         }
         catch (Exception ex)
