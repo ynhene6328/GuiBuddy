@@ -221,7 +221,7 @@ public class ChatViewModel : INotifyPropertyChanged
 
         AIResponse response = await _chatService.SendMessageAsync(userText, CurrentContext);
         
-        Messages.Add(new ChatMessage("GuiBuddy-AI", response.ResponseText));
+        Messages.Add(new ChatMessage("GuiBuddy-AI", response.ResponseText + "\n\n---------------\n\n" + response.ContextSummary));
 
         // UserGoalが返ってきたら監視を開始
         if (!string.IsNullOrWhiteSpace(response.UserGoal))

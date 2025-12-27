@@ -4,6 +4,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:local="clr-namespace:GuiBuddy.App.Views"
+             xmlns:selectors="clr-namespace:GuiBuddy.App.TemplateSelectors"
              mc:Ignorable="d"
              d:DesignHeight="450"
              d:DesignWidth="300">
@@ -139,6 +140,70 @@
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>
         <local:MultiplyConverter x:Key="MultiplyConverter" Factor="0.8"/>
         <local:ExpandIconConverter x:Key="ExpandIconConverter"/>
+
+        <!-- ================= Message Templates ================= -->
+
+        <!-- User Message Template -->
+        <DataTemplate x:Key="UserMessageTemplate">
+            <Border Background="{StaticResource MessageBrush}"
+                    CornerRadius="10,10,0,10"
+                    Padding="10"
+                    Margin="6"
+                    HorizontalAlignment="Right"
+                    MaxWidth="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=ListBox}, Converter={StaticResource MultiplyConverter}}">
+                <StackPanel>
+                    <TextBlock Text="{Binding Sender}"
+                               FontWeight="SemiBold"
+                               Foreground="{StaticResource AccentBrush}"
+                               HorizontalAlignment="Right"
+                               Margin="0,0,0,4"/>
+                    <TextBlock Text="{Binding Text}"
+                               TextWrapping="Wrap"/>
+                </StackPanel>
+            </Border>
+        </DataTemplate>
+
+        <!-- AI Message Template -->
+        <DataTemplate x:Key="AiMessageTemplate">
+            <Border Background="{StaticResource MessageBrush}"
+                    CornerRadius="10,10,10,0"
+                    Padding="10"
+                    Margin="6"
+                    HorizontalAlignment="Left"
+                    MaxWidth="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=ListBox}, Converter={StaticResource MultiplyConverter}}">
+                <StackPanel>
+                    <TextBlock Text="{Binding Sender}"
+                               FontWeight="SemiBold"
+                               Foreground="{StaticResource AccentBrush}"
+                               Margin="0,0,0,4"/>
+                    <TextBlock Text="{Binding Text}"
+                               TextWrapping="Wrap"/>
+                </StackPanel>
+            </Border>
+        </DataTemplate>
+
+        <!-- System Message Template -->
+        <DataTemplate x:Key="SystemMessageTemplate">
+            <Border MaxWidth="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=ListBox}, Converter={StaticResource MultiplyConverter}}"
+                    HorizontalAlignment="Center"
+                    Margin="0,12">
+                <TextBox Text="{Binding Text}"
+                         IsReadOnly="True"
+                         BorderThickness="0"
+                         Background="Transparent"
+                         TextWrapping="Wrap"
+                         HorizontalAlignment="Center"
+                         TextAlignment="Center"
+                         Foreground="{StaticResource MutedTextBrush}"
+                         FontSize="12"/>
+            </Border>
+        </DataTemplate>
+
+        <!-- Template Selector -->
+        <selectors:ChatMessageTemplateSelector x:Key="ChatMessageTemplateSelector"
+                                             UserMessageTemplate="{StaticResource UserMessageTemplate}"
+                                             AiMessageTemplate="{StaticResource AiMessageTemplate}"
+                                             SystemMessageTemplate="{StaticResource SystemMessageTemplate}"/>
     </UserControl.Resources>
 
     <!-- ================= Layout ================= -->
@@ -264,44 +329,14 @@
                  Background="White"
                  ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                  ScrollViewer.CanContentScroll="False"
+                 ItemTemplateSelector="{StaticResource ChatMessageTemplateSelector}"
                  Loaded="ChatListBox_Loaded">
-
-            <ListBox.ItemTemplate>
-                <DataTemplate>
-                    <Border x:Name="MessageBorder"
-                            Background="{StaticResource MessageBrush}"
-                            CornerRadius="10"
-                            Padding="10"
-                            Margin="6"
-                            HorizontalAlignment="Left"
-                            MaxWidth="{Binding ActualWidth,
-                                               RelativeSource={RelativeSource AncestorType=ListBox},
-                                               Converter={StaticResource MultiplyConverter}}">
-
-                        <StackPanel>
-                            <TextBlock Text="{Binding Sender}"
-                                       FontWeight="SemiBold"
-                                       Foreground="{StaticResource AccentBrush}"
-                                       Margin="0,0,0,4"/>
-                            <TextBlock Text="{Binding Text}"
-                                       TextWrapping="Wrap"/>
-                        </StackPanel>
-                    </Border>
-
-                    <DataTemplate.Triggers>
-                        <DataTrigger Binding="{Binding IsUserMessage}" Value="True">
-                            <Setter TargetName="MessageBorder"
-                                    Property="HorizontalAlignment"
-                                    Value="Right"/>
-                        </DataTrigger>
-                    </DataTemplate.Triggers>
-                </DataTemplate>
-            </ListBox.ItemTemplate>
 
             <ListBox.ItemContainerStyle>
                 <Style TargetType="ListBoxItem">
                     <Setter Property="Background" Value="Transparent"/>
                     <Setter Property="Padding" Value="0"/>
+                    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
                     <Setter Property="Template">
                         <Setter.Value>
                             <ControlTemplate TargetType="ListBoxItem">
